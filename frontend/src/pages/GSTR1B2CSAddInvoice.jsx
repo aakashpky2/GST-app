@@ -13,9 +13,14 @@ const GSTR1B2CSAddInvoice = () => {
     const [formData, setFormData] = useState({
         pos: '',
         taxableValue: '',
-        supplyType: 'Intra-State',
+        supplyType: 'Inter-State',
         isDifferentialRate: false,
-        rate: ''
+        applicablePercentage: '65%',
+        rate: '',
+        integratedTax: '',
+        centralTax: '',
+        stateTax: '',
+        cess: ''
     });
 
     const posOptions = [
@@ -37,14 +42,54 @@ const GSTR1B2CSAddInvoice = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
+        let updatedData = {
+            ...formData,
             [name]: type === 'checkbox' ? checked : value
-        }));
+        };
 
-        // Basic logic for supply type logic (simplified)
-        // Usually B2CS is Intra-State unless POS is different from user's state
-        // For simplicity in this learning app, we allow it to be Intra-State by default
+        if (name === 'pos') {
+            const selectedPos = value || '';
+            if (selectedPos === 'Select' || selectedPos === '' || selectedPos === 'Select POS') {
+                updatedData.supplyType = 'Inter-State';
+            } else if (selectedPos.toLowerCase().includes('kerala')) {
+                updatedData.supplyType = 'Intra-State';
+            } else {
+                updatedData.supplyType = 'Inter-State';
+            }
+            // Reset values on POS change
+            updatedData.taxableValue = '';
+            updatedData.integratedTax = '';
+            updatedData.centralTax = '';
+            updatedData.stateTax = '';
+            updatedData.cess = '';
+        }
+
+        // Auto-calculate taxes if taxableValue or rate changes
+        if (name === 'taxableValue' || name === 'rate') {
+            const taxableAmt = parseFloat(name === 'taxableValue' ? value : updatedData.taxableValue);
+            const rateStr = name === 'rate' ? value : updatedData.rate;
+            const rateVal = parseFloat(rateStr.replace('%', ''));
+
+            if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
+                if (updatedData.supplyType === 'Intra-State') {
+                    const halfTax = (taxableAmt * (rateVal / 2)) / 100;
+                    updatedData.centralTax = halfTax.toFixed(2);
+                    updatedData.stateTax = halfTax.toFixed(2);
+                    updatedData.integratedTax = '';
+                } else {
+                    const igst = (taxableAmt * rateVal) / 100;
+                    updatedData.integratedTax = igst.toFixed(2);
+                    updatedData.centralTax = '';
+                    updatedData.stateTax = '';
+                }
+            } else {
+                updatedData.integratedTax = '';
+                updatedData.centralTax = '';
+                updatedData.stateTax = '';
+            }
+        }
+
+        setFormData(updatedData);
     };
 
     const handleSave = async () => {
@@ -150,16 +195,28 @@ const GSTR1B2CSAddInvoice = () => {
                         </div>
                     </div>
 
-                    <div className="b2cs-add-checkbox-section">
-                        <label className="b2cs-add-checkbox-label">
-                            <input
-                                type="checkbox"
-                                name="isDifferentialRate"
-                                checked={formData.isDifferentialRate}
-                                onChange={handleChange}
-                            />
-                            Is the supply eligible to be taxed at a differential percentage (%) of the existing rate of tax, as notified by the Government?
-                        </label>
+                    <div className="b2cs-add-diff-row">
+                        <div className="b2cs-add-checkbox-section">
+                            <label className="b2cs-add-checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    name="isDifferentialRate"
+                                    checked={formData.isDifferentialRate}
+                                    onChange={handleChange}
+                                />
+                                Is the supply eligible to be taxed at a differential percentage (%) of the existing rate of tax, as notified by the Government?
+                            </label>
+                        </div>
+
+                        {formData.isDifferentialRate && (
+                            <div className="b2cs-add-form-group differential-group">
+                                <label>Applicable % of Tax Rate <span className="red-dot">*</span></label>
+                                <select name="applicablePercentage" value={formData.applicablePercentage} onChange={handleChange}>
+                                    <option value="65%">65%</option>
+                                    <option value="100%">100%</option>
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     <div className="b2cs-add-form-grid" style={{ paddingTop: '10px' }}>
@@ -171,6 +228,39 @@ const GSTR1B2CSAddInvoice = () => {
                             </select>
                         </div>
                     </div>
+
+                    {/* Dynamic Tax Fields - Only shown after POS is selected */}
+                    {formData.pos && formData.pos !== 'Select' && (
+                        <div className="b2cs-tax-fields-grid">
+                            {formData.supplyType === 'Intra-State' ? (
+                                <>
+                                    <div className="b2cs-add-form-group">
+                                        <label>Central Tax (₹) <span className="red-dot">*</span></label>
+                                        <input type="text" value={formData.centralTax} readOnly className="b2cs-add-disabled-input" placeholder="0.00" />
+                                    </div>
+                                    <div className="b2cs-add-form-group">
+                                        <label>State/UT Tax (₹) <span className="red-dot">*</span></label>
+                                        <input type="text" value={formData.stateTax} readOnly className="b2cs-add-disabled-input" placeholder="0.00" />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="b2cs-add-form-group">
+                                    <label>Integrated Tax (₹) <span className="red-dot">*</span></label>
+                                    <input type="text" value={formData.integratedTax} readOnly className="b2cs-add-disabled-input" placeholder="0.00" />
+                                </div>
+                            )}
+                            <div className="b2cs-add-form-group">
+                                <label>CESS (₹)</label>
+                                <input
+                                    type="text"
+                                    name="cess"
+                                    value={formData.cess}
+                                    onChange={handleChange}
+                                    placeholder="0.00"
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     <div className="b2cs-add-actions">
                         <button className="b2cs-add-btn-outline" onClick={() => navigate('/returns/gstr1/b2cs')}>BACK</button>

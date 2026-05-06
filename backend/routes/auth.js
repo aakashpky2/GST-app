@@ -23,6 +23,20 @@ router.get('/trn-details/:trn', async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'TRN not found' });
         }
 
+        // Check if registration is already completed for this TRN
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('username')
+            .eq('trn', trn)
+            .single();
+
+        if (existingUser) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'This TRN is now disabled because the application has been submitted. Please login with your generated username and password.' 
+            });
+        }
+
         res.status(200).json({ success: true, data });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });

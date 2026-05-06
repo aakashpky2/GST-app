@@ -86,16 +86,26 @@ const GSTR1CDNURDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoices.map((inv, idx) => (
-                                        <tr key={idx}>
-                                            <td>{inv.noteType}</td>
-                                            <td>{inv.noteNumber}</td>
-                                            <td>{inv.noteDate}</td>
-                                            <td>{inv.taxableValue}</td>
-                                            <td>{inv.integratedTax}</td>
-                                            <td>{inv.cess}</td>
-                                        </tr>
-                                    ))}
+                                    {invoices.map((inv, idx) => {
+                                        // Aggregate totals from taxDetails (which is an object keyed by rate)
+                                        const taxDetails = inv.taxDetails || {};
+                                        const totalTaxable = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.taxableValue) || 0), 0).toFixed(2);
+                                        const totalIntegrated = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.integratedTax) || 0), 0).toFixed(2);
+                                        const totalCentral = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.centralTax) || 0), 0).toFixed(2);
+                                        const totalState = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.stateTax) || 0), 0).toFixed(2);
+                                        const totalCess = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.cess) || 0), 0).toFixed(2);
+
+                                        return (
+                                            <tr key={idx}>
+                                                <td>{inv.noteType}</td>
+                                                <td>{inv.noteNumber}</td>
+                                                <td>{inv.noteDate}</td>
+                                                <td>{totalTaxable}</td>
+                                                <td>{totalIntegrated !== "0.00" ? totalIntegrated : (parseFloat(totalCentral) + parseFloat(totalState)).toFixed(2)}</td>
+                                                <td>{totalCess}</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

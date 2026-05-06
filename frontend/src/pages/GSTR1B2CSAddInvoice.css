@@ -118,6 +118,32 @@
     height: 17px;
 }
 
+.b2cs-add-diff-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 30px;
+    padding: 20px 0;
+}
+
+.b2cs-add-diff-row .b2cs-add-checkbox-section {
+    flex: 2;
+    padding: 0;
+}
+
+.differential-group {
+    flex: 1;
+}
+
+.b2cs-tax-fields-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+    padding: 20px 0;
+    border-top: 1px solid #eee;
+    margin-top: 20px;
+}
+
 /* Actions */
 .b2cs-add-actions {
     display: flex;

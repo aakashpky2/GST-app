@@ -209,20 +209,95 @@ const GSTR1Summary = () => {
                                 <td>{formatCurr(s.b2cs?.cess)}</td>
                             </tr>
 
+                            {/* CDNR */}
+                            <tr className="section-row-main">
+                                <td colSpan="8">9B - Credit / Debit Notes (Registered) - CDNR</td>
+                            </tr>
+                            <tr>
+                                <td>Total</td>
+                                <td>{s.cdnr?.records || 0}</td>
+                                <td>Note</td>
+                                <td>{formatCurr(s.cdnr?.value)}</td>
+                                <td>{formatCurr(s.cdnr?.igst)}</td>
+                                <td>{formatCurr(s.cdnr?.cgst)}</td>
+                                <td>{formatCurr(s.cdnr?.sgst)}</td>
+                                <td>{formatCurr(s.cdnr?.cess)}</td>
+                            </tr>
+
+                            {/* CDNUR */}
+                            <tr className="section-row-main">
+                                <td colSpan="8">9B - Credit / Debit Notes (Unregistered) - CDNUR</td>
+                            </tr>
+                            <tr>
+                                <td>Total</td>
+                                <td>{s.cdnur?.records || 0}</td>
+                                <td>Note</td>
+                                <td>{formatCurr(s.cdnur?.value)}</td>
+                                <td>{formatCurr(s.cdnur?.igst)}</td>
+                                <td>{formatCurr(s.cdnur?.cgst)}</td>
+                                <td>{formatCurr(s.cdnur?.sgst)}</td>
+                                <td>{formatCurr(s.cdnur?.cess)}</td>
+                            </tr>
+
                             {/* Nil Rated */}
                             <tr className="section-row-main">
                                 <td colSpan="8">8 - Nil rated, exempted and non GST outward supplies</td>
                             </tr>
                             <tr>
                                 <td colSpan="3">Total</td>
-                                <td>{formatCurr(s.nilRated?.value + s.nilRated?.exempted + s.nilRated?.nonGst)}</td>
+                                <td>{formatCurr((s.nilRated?.value || 0) + (s.nilRated?.exempted || 0) + (s.nilRated?.nonGst || 0))}</td>
                                 <td className="gray-cell"></td>
                                 <td className="gray-cell"></td>
                                 <td className="gray-cell"></td>
                                 <td className="gray-cell"></td>
                             </tr>
 
-                            {/* 15A Section 9(5) based on image */}
+                            {/* Adv Tax */}
+                            <tr className="section-row-main">
+                                <td colSpan="8">11A(1), 11A(2) - Tax Liability (Advances Received)</td>
+                            </tr>
+                            <tr>
+                                <td>Total</td>
+                                <td>{s.advTax?.records || 0}</td>
+                                <td>Advance</td>
+                                <td>{formatCurr(s.advTax?.value)}</td>
+                                <td>{formatCurr(s.advTax?.igst)}</td>
+                                <td>{formatCurr(s.advTax?.cgst)}</td>
+                                <td>{formatCurr(s.advTax?.sgst)}</td>
+                                <td>{formatCurr(s.advTax?.cess)}</td>
+                            </tr>
+
+                            {/* Adj Advances */}
+                            <tr className="section-row-main">
+                                <td colSpan="8">11B(1), 11B(2) - Adjustment of Advances</td>
+                            </tr>
+                            <tr>
+                                <td>Total</td>
+                                <td>{s.adjAdvances?.records || 0}</td>
+                                <td>Adjustment</td>
+                                <td>{formatCurr(s.adjAdvances?.value)}</td>
+                                <td>{formatCurr(s.adjAdvances?.igst)}</td>
+                                <td>{formatCurr(s.adjAdvances?.cgst)}</td>
+                                <td>{formatCurr(s.adjAdvances?.sgst)}</td>
+                                <td>{formatCurr(s.adjAdvances?.cess)}</td>
+                            </tr>
+
+                            {/* HSN Summary */}
+                            <tr className="section-row-main">
+                                <td colSpan="8">12 - HSN-wise summary of outward supplies</td>
+                            </tr>
+                            <tr>
+                                <td>Total</td>
+                                <td>{s.hsn?.records || 0}</td>
+                                <td>HSN</td>
+                                <td>{formatCurr(s.hsn?.value)}</td>
+                                <td>{formatCurr(s.hsn?.igst)}</td>
+                                <td>{formatCurr(s.hsn?.cgst)}</td>
+                                <td>{formatCurr(s.hsn?.sgst)}</td>
+                                <td>{formatCurr(s.hsn?.cess)}</td>
+                            </tr>
+
+                            {/* 15A Section 9(5) */}
                             <tr className="section-row-main">
                                 <td colSpan="8">15A (I) - Amended Supplies U/s 9(5) - For Registered Recipients</td>
                             </tr>
@@ -231,20 +306,38 @@ const GSTR1Summary = () => {
                                 <td>{s.sup95?.records || 0}</td>
                                 <td>Document</td>
                                 <td>{formatCurr(s.sup95?.value)}</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
-                                <td>0.00</td>
+                                <td>{formatCurr(s.sup95?.igst)}</td>
+                                <td>{formatCurr(s.sup95?.cgst)}</td>
+                                <td>{formatCurr(s.sup95?.sgst)}</td>
+                                <td>{formatCurr(s.sup95?.cess)}</td>
                             </tr>
 
                             {/* Grand Total */}
                             <tr className="total-row">
-                                <td colSpan="3">Total Liability (Outward supplies other than Reverse charge)</td>
-                                <td>{formatCurr((s.b2b?.value || 0) + (s.b2cl?.value || 0) + (s.exports?.value || 0) + (s.sez?.value || 0) + (s.deemedExports?.value || 0) + (s.b2cs?.value || 0) + (s.sup95?.value || 0))}</td>
-                                <td>{formatCurr((s.b2b?.igst || 0) + (s.b2cl?.igst || 0) + (s.exports?.igst || 0) + (s.sez?.igst || 0) + (s.deemedExports?.igst || 0) + (s.b2cs?.igst || 0))}</td>
-                                <td>{formatCurr((s.b2b?.cgst || 0) + (s.deemedExports?.cgst || 0) + (s.b2cs?.cgst || 0))}</td>
-                                <td>{formatCurr((s.b2b?.sgst || 0) + (s.deemedExports?.sgst || 0) + (s.b2cs?.sgst || 0))}</td>
-                                <td>{formatCurr((s.b2b?.cess || 0) + (s.b2cl?.cess || 0) + (s.exports?.cess || 0) + (s.sez?.cess || 0) + (s.deemedExports?.cess || 0) + (s.b2cs?.cess || 0))}</td>
+                                <td colSpan="3">Total Liability (Outward supplies and Advances)</td>
+                                <td>{formatCurr(
+                                    (s.b2b?.value || 0) + (s.b2cl?.value || 0) + (s.exports?.value || 0) + 
+                                    (s.sez?.value || 0) + (s.deemedExports?.value || 0) + (s.b2cs?.value || 0) + 
+                                    (s.advTax?.value || 0) + (s.sup95?.value || 0) + (s.cdnr?.value || 0) + (s.cdnur?.value || 0)
+                                )}</td>
+                                <td>{formatCurr(
+                                    (s.b2b?.igst || 0) + (s.b2cl?.igst || 0) + (s.exports?.igst || 0) + 
+                                    (s.sez?.igst || 0) + (s.deemedExports?.igst || 0) + (s.b2cs?.igst || 0) + 
+                                    (s.advTax?.igst || 0) + (s.sup95?.igst || 0) + (s.cdnr?.igst || 0) + (s.cdnur?.igst || 0)
+                                )}</td>
+                                <td>{formatCurr(
+                                    (s.b2b?.cgst || 0) + (s.deemedExports?.cgst || 0) + (s.b2cs?.cgst || 0) + 
+                                    (s.advTax?.cgst || 0) + (s.sup95?.cgst || 0) + (s.cdnr?.cgst || 0) + (s.cdnur?.cgst || 0)
+                                )}</td>
+                                <td>{formatCurr(
+                                    (s.b2b?.sgst || 0) + (s.deemedExports?.sgst || 0) + (s.b2cs?.sgst || 0) + 
+                                    (s.advTax?.sgst || 0) + (s.sup95?.sgst || 0) + (s.cdnr?.sgst || 0) + (s.cdnur?.sgst || 0)
+                                )}</td>
+                                <td>{formatCurr(
+                                    (s.b2b?.cess || 0) + (s.b2cl?.cess || 0) + (s.exports?.cess || 0) + 
+                                    (s.sez?.cess || 0) + (s.deemedExports?.cess || 0) + (s.b2cs?.cess || 0) + 
+                                    (s.advTax?.cess || 0) + (s.sup95?.cess || 0) + (s.cdnr?.cess || 0) + (s.cdnur?.cess || 0)
+                                )}</td>
                             </tr>
                         </tbody>
                     </table>

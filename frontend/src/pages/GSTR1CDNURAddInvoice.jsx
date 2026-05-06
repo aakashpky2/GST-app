@@ -30,7 +30,7 @@ const GSTR1CDNURAddInvoice = () => {
 
     const [taxData, setTaxData] = useState(
         rates.reduce((acc, rate) => {
-            acc[rate] = { taxableValue: '', integratedTax: '', cess: '' };
+            acc[rate] = { taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' };
             return acc;
         }, {})
     );
@@ -50,17 +50,68 @@ const GSTR1CDNURAddInvoice = () => {
 
     const handleFormChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
+        let updatedData = {
+            ...formData,
             [name]: type === 'checkbox' ? checked : value
-        }));
+        };
+
+        if (name === 'pos') {
+            const selectedPos = value || '';
+            if (selectedPos === 'Select' || selectedPos === '') {
+                updatedData.supplyType = 'Inter-State';
+            } else if (selectedPos.toLowerCase().includes('kerala')) {
+                updatedData.supplyType = 'Intra-State';
+            } else {
+                updatedData.supplyType = 'Inter-State';
+            }
+
+            // Clear all tax values when POS changes
+            const resetTaxData = rates.reduce((acc, rate) => {
+                acc[rate] = { taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' };
+                return acc;
+            }, {});
+            setTaxData(resetTaxData);
+        }
+
+        setFormData(updatedData);
     };
 
     const handleTaxChange = (rate, field, value) => {
-        setTaxData(prev => ({
-            ...prev,
-            [rate]: { ...prev[rate], [field]: value }
-        }));
+        setTaxData(prev => {
+            const newRateData = { ...prev[rate], [field]: value };
+
+            // Instant Calculation Logic
+            if (field === 'taxableValue') {
+                const taxableAmt = parseFloat(value);
+                const rateVal = parseFloat(rate.replace('%', ''));
+
+                if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
+                    if (formData.supplyType === 'Intra-State') {
+                        // Split rate equally for Central and State tax
+                        const halfTax = (taxableAmt * (rateVal / 2)) / 100;
+                        const formattedTax = halfTax.toFixed(2);
+                        newRateData.centralTax = formattedTax;
+                        newRateData.stateTax = formattedTax;
+                        newRateData.integratedTax = '';
+                    } else {
+                        // Integrated Tax = (Taxable Value × Rate %) / 100
+                        const igst = (taxableAmt * rateVal) / 100;
+                        newRateData.integratedTax = igst.toFixed(2);
+                        newRateData.centralTax = '';
+                        newRateData.stateTax = '';
+                    }
+                } else {
+                    newRateData.integratedTax = '';
+                    newRateData.centralTax = '';
+                    newRateData.stateTax = '';
+                }
+            }
+
+            return {
+                ...prev,
+                [rate]: newRateData
+            };
+        });
     };
 
     const handleSave = async () => {
@@ -225,13 +276,20 @@ const GSTR1CDNURAddInvoice = () => {
                             <table className="cdnur-tax-table">
                                 <thead>
                                     <tr>
-                                        <th rowSpan="2" style={{ width: '20%' }}>Rate (%)</th>
+                                        <th rowSpan="2" style={{ width: '15%' }}>Rate (%)</th>
                                         <th rowSpan="2" style={{ width: '25%' }}>Taxable value (₹) <span className="red-dot">*</span></th>
-                                        <th colSpan="2">Amount of Tax</th>
+                                        <th colSpan={formData.supplyType === 'Intra-State' ? 3 : 2}>Amount of Tax</th>
                                     </tr>
                                     <tr>
-                                        <th style={{ width: '27.5%' }}>Integrated tax (₹) <span className="red-dot">*</span></th>
-                                        <th style={{ width: '27.5%' }}>Cess (₹)</th>
+                                        {formData.supplyType === 'Intra-State' ? (
+                                            <>
+                                                <th style={{ width: '20%' }}>Central tax (₹) <span className="red-dot">*</span></th>
+                                                <th style={{ width: '20%' }}>State/UT tax (₹) <span className="red-dot">*</span></th>
+                                            </>
+                                        ) : (
+                                            <th style={{ width: '20%' }}>Integrated tax (₹) <span className="red-dot">*</span></th>
+                                        )}
+                                        <th style={{ width: '20%' }}>Cess (₹)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -246,14 +304,35 @@ const GSTR1CDNURAddInvoice = () => {
                                                     onChange={(e) => handleTaxChange(rate, 'taxableValue', e.target.value)}
                                                 />
                                             </td>
-                                            <td>
-                                                <input
-                                                    type="text"
-                                                    className="table-input disabled-table-input"
-                                                    value={taxData[rate].integratedTax}
-                                                    onChange={(e) => handleTaxChange(rate, 'integratedTax', e.target.value)}
-                                                />
-                                            </td>
+                                            {formData.supplyType === 'Intra-State' ? (
+                                                <>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            className="table-input disabled-table-input"
+                                                            value={taxData[rate].centralTax}
+                                                            readOnly
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            className="table-input disabled-table-input"
+                                                            value={taxData[rate].stateTax}
+                                                            readOnly
+                                                        />
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        className="table-input disabled-table-input"
+                                                        value={taxData[rate].integratedTax}
+                                                        readOnly
+                                                    />
+                                                </td>
+                                            )}
                                             <td>
                                                 <input
                                                     type="text"

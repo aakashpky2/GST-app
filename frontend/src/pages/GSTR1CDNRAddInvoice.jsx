@@ -29,7 +29,23 @@ const GSTR1CDNRAddInvoice = () => {
         supplyType: '',
         source: '',
         irn: '',
-        irnDate: ''
+        irn: '',
+        irnDate: '',
+        itemDetails: [
+            { rate: '0%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '0.1%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '0.25%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '1%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '1.5%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '3%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '5%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '6%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '7.5%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '12%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '18%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '28%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '40%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+        ]
     });
 
     const posOptions = [
@@ -45,10 +61,68 @@ const GSTR1CDNRAddInvoice = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-        setFormData(prev => ({
-            ...prev,
+        let updatedData = {
+            ...formData,
             [name]: type === 'checkbox' ? checked : value
-        }));
+        };
+
+        if (name === 'pos') {
+            const selectedPos = value || '';
+            if (selectedPos === 'Select' || selectedPos === '') {
+                updatedData.supplyType = 'Inter-State';
+            } else if (selectedPos.toLowerCase().includes('kerala')) {
+                updatedData.supplyType = 'Intra-State';
+            } else {
+                updatedData.supplyType = 'Inter-State';
+            }
+
+            // Clear all values when POS changes
+            updatedData.itemDetails = formData.itemDetails.map(item => ({
+                ...item,
+                taxableValue: '',
+                integratedTax: '',
+                centralTax: '',
+                stateTax: '',
+                cess: ''
+            }));
+        }
+
+        setFormData(updatedData);
+    };
+
+    const handleItemChange = (index, field, value) => {
+        const newItemDetails = [...formData.itemDetails];
+        newItemDetails[index][field] = value;
+
+        // Instant Calculation Logic
+        if (field === 'taxableValue') {
+            const taxableAmt = parseFloat(value);
+            const rateStr = newItemDetails[index].rate; // e.g. "5%"
+            const rateVal = parseFloat(rateStr.replace('%', ''));
+
+            if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
+                if (formData.supplyType === 'Intra-State') {
+                    // Split rate equally for Central and State tax
+                    const halfTax = (taxableAmt * (rateVal / 2)) / 100;
+                    const formattedTax = halfTax.toFixed(2);
+                    newItemDetails[index].centralTax = formattedTax;
+                    newItemDetails[index].stateTax = formattedTax;
+                    newItemDetails[index].integratedTax = '';
+                } else {
+                    // Integrated Tax = (Taxable Value × Rate %) / 100
+                    const igst = (taxableAmt * rateVal) / 100;
+                    newItemDetails[index].integratedTax = igst.toFixed(2);
+                    newItemDetails[index].centralTax = '';
+                    newItemDetails[index].stateTax = '';
+                }
+            } else {
+                newItemDetails[index].integratedTax = '';
+                newItemDetails[index].centralTax = '';
+                newItemDetails[index].stateTax = '';
+            }
+        }
+
+        setFormData(prev => ({ ...prev, itemDetails: newItemDetails }));
     };
 
     const handleSave = async () => {
@@ -229,6 +303,88 @@ const GSTR1CDNRAddInvoice = () => {
                         <div className="cdnr-form-group">
                             <label>IRN date</label>
                             <input type="text" value={formData.irnDate} disabled className="disabled-input" />
+                        </div>
+                    </div>
+                    
+                    {/* Item Details Table Section */}
+                    <div className="cdnr-add-item-details-section">
+                        <h3 className="section-subtitle">Item details</h3>
+                        <div className="cdnr-add-table-container">
+                            <table className="cdnr-add-item-table">
+                                <thead>
+                                    <tr>
+                                        <th style={{ width: '15%' }}>Rate (%)</th>
+                                        <th style={{ width: '25%' }}>Taxable value (₹) <span className="red-dot">*</span></th>
+                                        <th colSpan={formData.supplyType === 'Intra-State' ? 3 : 2} style={{ textAlign: 'center' }}>Amount of Tax</th>
+                                    </tr>
+                                    <tr>
+                                        <th></th>
+                                        <th></th>
+                                        {formData.supplyType === 'Intra-State' ? (
+                                            <>
+                                                <th style={{ width: '20%' }}>Central tax (₹) <span className="red-dot">*</span></th>
+                                                <th style={{ width: '20%' }}>State/UT tax (₹) <span className="red-dot">*</span></th>
+                                            </>
+                                        ) : (
+                                            <th style={{ width: '20%' }}>Integrated tax (₹) <span className="red-dot">*</span></th>
+                                        )}
+                                        <th style={{ width: '20%' }}>CESS (₹)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {formData.itemDetails.map((item, index) => (
+                                        <tr key={index}>
+                                            <td className="rate-cell">{item.rate}</td>
+                                            <td>
+                                                <input
+                                                    type="text"
+                                                    value={item.taxableValue}
+                                                    onChange={(e) => handleItemChange(index, 'taxableValue', e.target.value)}
+                                                />
+                                            </td>
+                                            {formData.supplyType === 'Intra-State' ? (
+                                                <>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            value={item.centralTax}
+                                                            readOnly
+                                                            className={item.centralTax ? 'disabled-input' : ''}
+                                                            placeholder="0.00"
+                                                        />
+                                                    </td>
+                                                    <td>
+                                                        <input
+                                                            type="text"
+                                                            value={item.stateTax}
+                                                            readOnly
+                                                            className={item.stateTax ? 'disabled-input' : ''}
+                                                            placeholder="0.00"
+                                                        />
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        value={item.integratedTax}
+                                                        readOnly
+                                                        className={item.integratedTax ? 'disabled-input' : ''}
+                                                        placeholder="0.00"
+                                                    />
+                                                </td>
+                                            )}
+                                            <td>
+                                                <input
+                                                    type="text"
+                                                    value={item.cess}
+                                                    onChange={(e) => handleItemChange(index, 'cess', e.target.value)}
+                                                />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 

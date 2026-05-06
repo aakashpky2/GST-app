@@ -124,6 +124,69 @@
     border-color: #e0e0e0 !important;
 }
 
+/* Item Details Table Styles */
+.cdnr-add-item-details-section {
+    margin-top: 30px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.section-subtitle {
+    background-color: #f8f9fa;
+    padding: 12px 20px;
+    margin: 0;
+    font-size: 15px;
+    color: #2b4b7c;
+    font-weight: 600;
+    border-bottom: 1px solid #ddd;
+}
+
+.cdnr-add-table-container {
+    padding: 20px;
+    overflow-x: auto;
+}
+
+.cdnr-add-item-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.cdnr-add-item-table th,
+.cdnr-add-item-table td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+}
+
+.cdnr-add-item-table th {
+    background-color: #f1f1f1;
+    color: #333;
+    font-weight: 600;
+}
+
+.cdnr-add-item-table td input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    font-size: 13px;
+    box-sizing: border-box;
+}
+
+.rate-cell {
+    background-color: #fff;
+    text-align: center !important;
+    font-weight: 500;
+}
+
+.cdnr-add-disabled-input {
+    background-color: #f1f3f6 !important;
+    color: #555;
+    cursor: not-allowed;
+}
+
 .cdnr-add-actions {
     display: flex;
     justify-content: flex-end;

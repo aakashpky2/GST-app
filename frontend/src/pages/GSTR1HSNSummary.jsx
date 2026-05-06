@@ -54,14 +54,60 @@ const GSTR1HSNSummary = () => {
         }
     };
 
+    const hsnMaster = [
+        { hsn: "8517", description: "Mobile Phones", uqc: "PCS-PIECES", rate: "18%", qty: "150", val: "2500000" },
+        { hsn: "8471", description: "Laptops/Computers", uqc: "UNT-UNITS", rate: "18%", qty: "45", val: "3150000" },
+        { hsn: "9983", description: "IT Design & Development", uqc: "OTH-OTHERS", rate: "18%", qty: "1", val: "1200000" },
+        { hsn: "6109", description: "T-Shirts (Cotton)", uqc: "PCS-PIECES", rate: "5%", qty: "500", val: "150000" },
+        { hsn: "1006", description: "Rice", uqc: "KGS-KILOGRAMS", rate: "5%", qty: "2000", val: "80000" }
+    ];
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        
+        setFormData(prev => {
+            let updated = { ...prev, [name]: value };
+
+            // HSN Smart Lookup Logic
+            if (name === 'hsn') {
+                const masterItem = hsnMaster.find(item => item.hsn === value);
+                if (masterItem) {
+                    updated.descriptionAsPerHSN = masterItem.description;
+                    updated.uqc = masterItem.uqc;
+                    updated.rate = masterItem.rate;
+                    updated.totalQuantity = masterItem.qty;
+                    updated.totalTaxableValue = masterItem.val;
+                    
+                    // Trigger tax calculation for the new values
+                    const taxableVal = parseFloat(masterItem.val);
+                    const rateVal = parseFloat(masterItem.rate.replace('%', ''));
+                    if (!isNaN(taxableVal) && !isNaN(rateVal)) {
+                        updated.integratedTax = ((taxableVal * rateVal) / 100).toFixed(2);
+                        updated.centralTax = '0.00';
+                        updated.stateTax = '0.00';
+                        updated.cess = '0.00';
+                    }
+                } else {
+                    // Reset if HSN not found
+                    updated.descriptionAsPerHSN = '';
+                    updated.uqc = '';
+                    updated.rate = '';
+                    updated.totalQuantity = '';
+                    updated.totalTaxableValue = '';
+                    updated.integratedTax = '';
+                    updated.centralTax = '';
+                    updated.stateTax = '';
+                    updated.cess = '';
+                }
+            }
+
+            return updated;
+        });
     };
 
     const handleAdd = async () => {
-        if (!formData.hsn || !formData.uqc || !formData.totalQuantity || !formData.totalTaxableValue || !formData.rate) {
-            toast.error('Please fill all mandatory fields');
+        if (!formData.hsn) {
+            toast.error('Please select an HSN from the list');
             return;
         }
 
@@ -224,10 +270,16 @@ const GSTR1HSNSummary = () => {
                                 <input
                                     type="text"
                                     name="hsn"
-                                    placeholder="Enter Product Name as in Master/HSN Code,"
+                                    placeholder="Search HSN Code (e.g. 8517, 1006...)"
                                     value={formData.hsn}
                                     onChange={handleChange}
+                                    list="hsn-list"
                                 />
+                                <datalist id="hsn-list">
+                                    {hsnMaster.map(item => (
+                                        <option key={item.hsn} value={item.hsn}>{item.hsn} - {item.description}</option>
+                                    ))}
+                                </datalist>
                             </div>
                             <div className="hsn-form-group">
                                 <label>Description</label>
@@ -256,6 +308,7 @@ const GSTR1HSNSummary = () => {
                                     name="descriptionAsPerHSN"
                                     value={formData.descriptionAsPerHSN}
                                     onChange={handleChange}
+                                    readOnly
                                     className="disabled-input"
                                 />
                             </div>
@@ -264,7 +317,7 @@ const GSTR1HSNSummary = () => {
 
                             <div className="hsn-form-group">
                                 <label>UQC <span className="red-dot">*</span></label>
-                                <select name="uqc" value={formData.uqc} onChange={handleChange}>
+                                <select name="uqc" value={formData.uqc} onChange={handleChange} disabled={true}>
                                     <option value="">Select</option>
                                     {uqcOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                 </select>
@@ -276,6 +329,9 @@ const GSTR1HSNSummary = () => {
                                     name="totalQuantity"
                                     value={formData.totalQuantity}
                                     onChange={handleChange}
+                                    readOnly
+                                    className="disabled-input"
+                                    placeholder="0.00"
                                 />
                             </div>
                             <div className="hsn-form-group">
@@ -285,12 +341,15 @@ const GSTR1HSNSummary = () => {
                                     name="totalTaxableValue"
                                     value={formData.totalTaxableValue}
                                     onChange={handleChange}
+                                    readOnly
+                                    className="disabled-input"
+                                    placeholder="0.00"
                                 />
                             </div>
 
                             <div className="hsn-form-group">
                                 <label>Rate (%) <span className="red-dot">*</span></label>
-                                <select name="rate" value={formData.rate} onChange={handleChange}>
+                                <select name="rate" value={formData.rate} onChange={handleChange} disabled={true}>
                                     <option value="">Select</option>
                                     {rates.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                 </select>
@@ -301,7 +360,9 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="integratedTax"
                                     value={formData.integratedTax}
-                                    onChange={handleChange}
+                                    readOnly
+                                    className="disabled-input"
+                                    placeholder="0.00"
                                 />
                             </div>
                             <div className="hsn-form-group">
@@ -310,7 +371,9 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="centralTax"
                                     value={formData.centralTax}
-                                    onChange={handleChange}
+                                    readOnly
+                                    className="disabled-input"
+                                    placeholder="0.00"
                                 />
                             </div>
 
@@ -320,7 +383,9 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="stateTax"
                                     value={formData.stateTax}
-                                    onChange={handleChange}
+                                    readOnly
+                                    className="disabled-input"
+                                    placeholder="0.00"
                                 />
                             </div>
                             <div className="hsn-form-group">
@@ -329,10 +394,11 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="cess"
                                     value={formData.cess}
-                                    onChange={handleChange}
+                                    readOnly
+                                    className="disabled-input"
+                                    placeholder="0.00"
                                 />
                             </div>
-                            <div></div>
                         </div>
 
                         <div className="hsn-action-row">

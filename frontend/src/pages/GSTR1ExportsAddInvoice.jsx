@@ -44,15 +44,54 @@ const GSTR1ExportsAddInvoice = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        
+        setFormData(prev => {
+            const updated = { ...prev, [name]: value };
+            
+            // If payment type changes to "Without Payment", clear all Integrated Tax
+            if (name === 'gstPayment' && value === 'Without Payment of Tax') {
+                updated.itemDetails = updated.itemDetails.map(item => ({
+                    ...item,
+                    integratedTax: '0.00'
+                }));
+            } else if (name === 'gstPayment' && value === 'With Payment of Tax') {
+                // Re-calculate Integrated Tax for all rows
+                updated.itemDetails = updated.itemDetails.map(item => {
+                    const taxableAmt = parseFloat(item.taxableValue);
+                    const rateVal = parseFloat(item.rate.replace('%', ''));
+                    if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
+                        return { ...item, integratedTax: ((taxableAmt * rateVal) / 100).toFixed(2) };
+                    }
+                    return item;
+                });
+            }
+            
+            return updated;
+        });
     };
 
     const handleItemChange = (index, field, value) => {
         const newItemDetails = [...formData.itemDetails];
         newItemDetails[index][field] = value;
+
+        // Instant Calculation Logic
+        if (field === 'taxableValue') {
+            const taxableAmt = parseFloat(value);
+            const rateStr = newItemDetails[index].rate;
+            const rateVal = parseFloat(rateStr.replace('%', ''));
+
+            if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
+                if (formData.gstPayment === 'Without Payment of Tax') {
+                    newItemDetails[index].integratedTax = '0.00';
+                } else {
+                    const igst = (taxableAmt * rateVal) / 100;
+                    newItemDetails[index].integratedTax = igst.toFixed(2);
+                }
+            } else {
+                newItemDetails[index].integratedTax = '';
+            }
+        }
+
         setFormData(prev => ({ ...prev, itemDetails: newItemDetails }));
     };
 
@@ -247,7 +286,9 @@ const GSTR1ExportsAddInvoice = () => {
                                                 <input
                                                     type="text"
                                                     value={item.integratedTax}
-                                                    onChange={(e) => handleItemChange(index, 'integratedTax', e.target.value)}
+                                                    readOnly
+                                                    className={item.integratedTax ? 'exports-add-disabled-input' : ''}
+                                                    placeholder="0.00"
                                                 />
                                             </td>
                                             <td>

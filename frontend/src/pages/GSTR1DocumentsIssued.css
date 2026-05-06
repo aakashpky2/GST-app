@@ -158,3 +158,41 @@
         margin: 10px;
     }
 }
+.doc-btn-delete-icon {
+    background-color: #d32f2f;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 0 auto;
+    transition: background-color 0.2s;
+}
+
+.doc-btn-delete-icon:hover {
+    background-color: #b71c1c;
+}
+
+.disabled-input {
+    background-color: #eeeeee !important;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.doc-table-input {
+    width: 90%;
+    padding: 6px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 13px;
+    text-align: center;
+}
+
+.doc-table-input:focus {
+    outline: none;
+    border-color: #1eb3a6;
+    box-shadow: 0 0 3px rgba(30, 179, 166, 0.3);
+}

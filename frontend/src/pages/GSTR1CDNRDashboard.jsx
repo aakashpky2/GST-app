@@ -91,17 +91,27 @@ const GSTR1CDNRDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoices.map((inv, idx) => (
-                                        <tr key={idx}>
-                                            <td>{inv.recipientGstin}</td>
-                                            <td>{inv.noteCount || 1}</td>
-                                            <td>{inv.taxableValue}</td>
-                                            <td>{inv.integratedTax}</td>
-                                            <td>{inv.centralTax}</td>
-                                            <td>{inv.stateTax}</td>
-                                            <td>{inv.cess}</td>
-                                        </tr>
-                                    ))}
+                                    {invoices.map((inv, idx) => {
+                                        // Aggregate totals from itemDetails
+                                        const items = inv.itemDetails || [];
+                                        const totalTaxable = items.reduce((sum, item) => sum + (parseFloat(item.taxableValue) || 0), 0).toFixed(2);
+                                        const totalIntegrated = items.reduce((sum, item) => sum + (parseFloat(item.integratedTax) || 0), 0).toFixed(2);
+                                        const totalCentral = items.reduce((sum, item) => sum + (parseFloat(item.centralTax) || 0), 0).toFixed(2);
+                                        const totalState = items.reduce((sum, item) => sum + (parseFloat(item.stateTax) || 0), 0).toFixed(2);
+                                        const totalCess = items.reduce((sum, item) => sum + (parseFloat(item.cess) || 0), 0).toFixed(2);
+
+                                        return (
+                                            <tr key={idx}>
+                                                <td>{inv.recipientGstin}</td>
+                                                <td>{inv.noteCount || 1}</td>
+                                                <td>{totalTaxable}</td>
+                                                <td>{totalIntegrated}</td>
+                                                <td>{totalCentral}</td>
+                                                <td>{totalState}</td>
+                                                <td>{totalCess}</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

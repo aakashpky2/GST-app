@@ -12,13 +12,21 @@ const GSTR1AdvTaxAddDetails = () => {
     const [formData, setFormData] = useState({
         pos: '',
         supplyType: '',
-        differentialRate: false,
-        grossAdvance: '',
-        rate: '',
-        igst: '',
-        cgst: '',
-        sgst: '',
-        cess: ''
+        applicablePercentage: '65%',
+        itemDetails: [
+            { rate: '0.1%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '0.25%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '1%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '1.5%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '3%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '5%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '6%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '7.5%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '12%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '18%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '28%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+            { rate: '40%', grossAdvance: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
+        ]
     });
 
     const posOptions = [
@@ -34,24 +42,77 @@ const GSTR1AdvTaxAddDetails = () => {
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
-
-        let newFormData = {
+        let updatedData = {
             ...formData,
             [name]: type === 'checkbox' ? checked : value
         };
 
-        if (name === 'pos' && value) {
-            // Assume 33 is local state (Tamil Nadu) for learning purposes
-            const isLocal = value.startsWith('33');
-            newFormData.supplyType = isLocal ? 'Intra-State' : 'Inter-State';
+        if (name === 'pos') {
+            const selectedPos = value || '';
+            if (selectedPos === 'Select' || selectedPos === '') {
+                updatedData.supplyType = '';
+            } else if (selectedPos.toLowerCase().includes('kerala')) {
+                updatedData.supplyType = 'Intra-State';
+            } else {
+                updatedData.supplyType = 'Inter-State';
+            }
+            // Reset table on POS change
+            updatedData.itemDetails = formData.itemDetails.map(item => ({
+                ...item,
+                grossAdvance: '',
+                integratedTax: '',
+                centralTax: '',
+                stateTax: '',
+                cess: ''
+            }));
         }
 
-        setFormData(newFormData);
+        setFormData(updatedData);
+    };
+
+    const handleItemChange = (index, field, value) => {
+        const newItemDetails = [...formData.itemDetails];
+        newItemDetails[index][field] = value;
+
+        // Instant Calculation Logic
+        if (field === 'grossAdvance') {
+            const advanceAmt = parseFloat(value);
+            const rateStr = newItemDetails[index].rate;
+            const rateVal = parseFloat(rateStr.replace('%', ''));
+
+            if (!isNaN(advanceAmt) && !isNaN(rateVal)) {
+                if (formData.supplyType === 'Intra-State') {
+                    const halfTax = (advanceAmt * (rateVal / 2)) / 100;
+                    newItemDetails[index].centralTax = halfTax.toFixed(2);
+                    newItemDetails[index].stateTax = halfTax.toFixed(2);
+                    newItemDetails[index].integratedTax = '';
+                } else {
+                    const igst = (advanceAmt * rateVal) / 100;
+                    newItemDetails[index].integratedTax = igst.toFixed(2);
+                    newItemDetails[index].centralTax = '';
+                    newItemDetails[index].stateTax = '';
+                }
+            } else {
+                newItemDetails[index].integratedTax = '';
+                newItemDetails[index].centralTax = '';
+                newItemDetails[index].stateTax = '';
+            }
+        }
+
+        setFormData(prev => ({ ...prev, itemDetails: newItemDetails }));
     };
 
     const handleSave = async () => {
-        if (!formData.pos || !formData.rate || !formData.grossAdvance) {
-            toast.error('Please fill all mandatory fields marked with *');
+        // Check if at least one row has data
+        const hasData = formData.itemDetails.some(item => parseFloat(item.grossAdvance) > 0);
+        
+        if (!formData.pos) {
+            toast.error('Please select Place of Supply (POS)');
+            return;
+        }
+
+        if (!hasData) {
+            toast.error('Please enter Gross Advance for at least one rate');
             return;
         }
 
@@ -125,7 +186,7 @@ const GSTR1AdvTaxAddDetails = () => {
                     </div>
 
                     {/* POS and Supply Type Row */}
-                    <div className="cdnr-add-form-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+                    <div className="cdnr-add-form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '30px' }}>
                         <div className="cdnr-form-group">
                             <label>
                                 POS <span style={{ fontSize: '11px', border: '1px solid #111', borderRadius: '50%', width: '13px', height: '13px', display: 'inline-block', textAlign: 'center', lineHeight: '13px', marginLeft: '4px' }}>i</span> <span className="red-dot">*</span>
@@ -137,62 +198,109 @@ const GSTR1AdvTaxAddDetails = () => {
                         </div>
                         <div className="cdnr-form-group">
                             <label>Supply Type</label>
-                            <input type="text" value={formData.supplyType} disabled className="disabled-input" />
+                            <input type="text" value={formData.supplyType} disabled className="disabled-input" placeholder="Supply Type" />
                         </div>
                     </div>
 
-                    <div className="cdnr-add-form-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginTop: '20px' }}>
-                        <div className="cdnr-form-group">
-                            <label>Rate (%) <span className="red-dot">*</span></label>
-                            <select name="rate" value={formData.rate} onChange={handleChange}>
-                                <option value="">Select</option>
-                                {["0.1%", "0.25%", "1%", "1.5%", "3%", "5%", "6%", "7.5%", "12%", "18%", "28%", "40%"].map(r => <option key={r} value={r}>{r}</option>)}
-                            </select>
-                        </div>
-                        <div className="cdnr-form-group">
-                            <label>Gross Advance Received (₹) <span className="red-dot">*</span></label>
-                            <input type="text" name="grossAdvance" value={formData.grossAdvance} onChange={handleChange} />
+                    {/* Checkbox and Differential Rate Row */}
+                    <div className="adv-diff-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '30px', marginTop: '25px', padding: '0 5px' }}>
+                        <div style={{ flex: 2 }}>
+                            <label className="cdnr-checkbox-item" style={{ alignItems: 'flex-start', gap: '10px' }}>
+                                <input
+                                    type="checkbox"
+                                    name="differentialRate"
+                                    checked={formData.differentialRate}
+                                    onChange={handleChange}
+                                    style={{ marginTop: '3px' }}
+                                />
+                                <span style={{ fontSize: '13.5px', color: '#333' }}>
+                                    Is the supply eligible to be taxed at a differential percentage (%) of the existing rate of tax, as notified by the Government?
+                                </span>
+                            </label>
                         </div>
 
-                        {formData.supplyType === 'Inter-State' ? (
-                            <div className="cdnr-form-group">
-                                <label>Integrated Tax (₹) <span className="red-dot">*</span></label>
-                                <input type="text" name="igst" value={formData.igst} onChange={handleChange} />
+                        {formData.differentialRate && (
+                            <div className="cdnr-form-group" style={{ flex: 1 }}>
+                                <label>Applicable % of Tax Rate <span className="red-dot">*</span></label>
+                                <select name="applicablePercentage" value={formData.applicablePercentage} onChange={handleChange}>
+                                    <option value="65%">65%</option>
+                                    <option value="100%">100%</option>
+                                </select>
                             </div>
-                        ) : (
-                            <>
-                                <div className="cdnr-form-group">
-                                    <label>Central Tax (₹) <span className="red-dot">*</span></label>
-                                    <input type="text" name="cgst" value={formData.cgst} onChange={handleChange} />
-                                </div>
-                                <div className="cdnr-form-group">
-                                    <label>State/UT Tax (₹) <span className="red-dot">*</span></label>
-                                    <input type="text" name="sgst" value={formData.sgst} onChange={handleChange} />
-                                </div>
-                            </>
                         )}
+                    </div>
 
-                        <div className="cdnr-form-group">
-                            <label>Cess (₹)</label>
-                            <input type="text" name="cess" value={formData.cess} onChange={handleChange} />
+                    {/* Item Details Table Section */}
+                    {formData.pos && formData.supplyType && (
+                        <div className="cdnr-add-item-details-section">
+                            <h3 className="section-subtitle">Item details</h3>
+                            <div className="cdnr-add-table-container">
+                                <table className="cdnr-add-item-table">
+                                    <thead>
+                                        <tr>
+                                            <th style={{ width: '15%' }}>Rate (%)</th>
+                                            <th style={{ width: '25%' }}>Gross Advance Received (₹) <span className="red-dot">*</span></th>
+                                            <th colSpan={formData.supplyType === 'Intra-State' ? 3 : 2} style={{ textAlign: 'center' }}>Amount of Tax</th>
+                                        </tr>
+                                        <tr>
+                                            <th></th>
+                                            <th></th>
+                                            {formData.supplyType === 'Intra-State' ? (
+                                                <>
+                                                    <th style={{ width: '20%' }}>Central tax (₹) <span className="red-dot">*</span></th>
+                                                    <th style={{ width: '20%' }}>State/UT tax (₹) <span className="red-dot">*</span></th>
+                                                </>
+                                            ) : (
+                                                <th style={{ width: '20%' }}>Integrated tax (₹) <span className="red-dot">*</span></th>
+                                            )}
+                                            <th style={{ width: '20%' }}>Cess (₹)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {formData.itemDetails.map((item, index) => (
+                                            <tr key={index}>
+                                                <td className="rate-cell" style={{ textAlign: 'center' }}>{item.rate}</td>
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        value={item.grossAdvance}
+                                                        onChange={(e) => handleItemChange(index, 'grossAdvance', e.target.value)}
+                                                        placeholder="0.00"
+                                                        style={{ textAlign: 'right' }}
+                                                    />
+                                                </td>
+                                                {formData.supplyType === 'Intra-State' ? (
+                                                    <>
+                                                        <td>
+                                                            <input type="text" value={item.centralTax} readOnly className="disabled-input" placeholder="0.00" style={{ textAlign: 'right' }} />
+                                                        </td>
+                                                        <td>
+                                                            <input type="text" value={item.stateTax} readOnly className="disabled-input" placeholder="0.00" style={{ textAlign: 'right' }} />
+                                                        </td>
+                                                    </>
+                                                ) : (
+                                                    <td>
+                                                        <input type="text" value={item.integratedTax} readOnly className="disabled-input" placeholder="0.00" style={{ textAlign: 'right' }} />
+                                                    </td>
+                                                )}
+                                                <td>
+                                                    <input
+                                                        type="text"
+                                                        value={item.cess}
+                                                        onChange={(e) => handleItemChange(index, 'cess', e.target.value)}
+                                                        placeholder="0.00"
+                                                        style={{ textAlign: 'right' }}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    {/* Checkbox Section */}
-                    <div style={{ marginTop: '25px', padding: '0 5px' }}>
-                        <label className="cdnr-checkbox-item" style={{ alignItems: 'flex-start', gap: '10px' }}>
-                            <input
-                                type="checkbox"
-                                name="differentialRate"
-                                checked={formData.differentialRate}
-                                onChange={handleChange}
-                                style={{ marginTop: '3px' }}
-                            />
-                            <span style={{ fontSize: '13.5px', color: '#333' }}>
-                                Is the supply eligible to be taxed at a differential percentage (%) of the existing rate of tax, as notified by the Government?
-                            </span>
-                        </label>
-                    </div>
+
 
                     <div className="cdnr-add-actions" style={{ marginTop: '40px' }}>
                         <button className="cdnr-btn-outline" onClick={() => navigate('/returns/gstr1/advtax')}>BACK</button>

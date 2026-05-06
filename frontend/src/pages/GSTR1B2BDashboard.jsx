@@ -110,15 +110,20 @@ const GSTR1B2BDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {invoices.map((inv, idx) => (
-                                    <tr key={inv.id || idx}>
-                                        <td>{inv.recipientGSTIN}</td>
-                                        <td>{inv.recipientName || 'Name not provided'}</td>
-                                        <td>{inv.invoiceNo}</td>
-                                        <td>{inv.invoiceDate}</td>
-                                        <td>{inv.totalInvoiceValue}</td>
-                                    </tr>
-                                ))}
+                                {invoices.map((inv, idx) => {
+                                    const items = inv.itemDetails || [];
+                                    const totalTaxable = items.reduce((sum, item) => sum + (parseFloat(item.taxableValue) || 0), 0).toFixed(2);
+                                    
+                                    return (
+                                        <tr key={inv.id || idx}>
+                                            <td>{inv.recipientGSTIN}</td>
+                                            <td>{inv.recipientName || 'Name not provided'}</td>
+                                            <td>{inv.invoiceNo}</td>
+                                            <td>{inv.invoiceDate}</td>
+                                            <td>{inv.totalInvoiceValue}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

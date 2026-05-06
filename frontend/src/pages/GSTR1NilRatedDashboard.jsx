@@ -84,14 +84,14 @@ const GSTR1NilRatedDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {invoices.map((inv, idx) => (
-                                    <tr key={inv.id || idx}>
-                                        <td>{inv.description}</td>
-                                        <td>{inv.nilRatedValue || '0.00'}</td>
-                                        <td>{inv.exemptedValue || '0.00'}</td>
-                                        <td>{inv.nonGstValue || '0.00'}</td>
-                                    </tr>
-                                ))}
+                                    {invoices.map((inv, idx) => (
+                                        <tr key={inv.id || idx}>
+                                            <td>{inv.description}</td>
+                                            <td>{inv.nilRated || '0.00'}</td>
+                                            <td>{inv.exempted || '0.00'}</td>
+                                            <td>{inv.nonGst || '0.00'}</td>
+                                        </tr>
+                                    ))}
                             </tbody>
                         </table>
                     </div>

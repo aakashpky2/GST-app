@@ -88,15 +88,20 @@ const GSTR1B2CLDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {invoices.map((inv, idx) => (
-                                    <tr key={inv.id || idx}>
-                                        <td>{inv.pos}</td>
-                                        <td>{inv.invoiceNo}</td>
-                                        <td>{inv.invoiceDate}</td>
-                                        <td>{inv.totalInvoiceValue}</td>
-                                        <td>{inv.taxableValue || '0.00'}</td>
-                                    </tr>
-                                ))}
+                                {invoices.map((inv, idx) => {
+                                    const items = inv.itemDetails || [];
+                                    const totalTaxable = items.reduce((sum, item) => sum + (parseFloat(item.taxableValue) || 0), 0).toFixed(2);
+                                    
+                                    return (
+                                        <tr key={inv.id || idx}>
+                                            <td>{inv.pos}</td>
+                                            <td>{inv.invoiceNo}</td>
+                                            <td>{inv.invoiceDate}</td>
+                                            <td>{inv.totalInvoiceValue}</td>
+                                            <td>{totalTaxable}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

@@ -85,17 +85,26 @@ const GSTR1AdvTaxDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {records.map((rec, idx) => (
-                                        <tr key={idx}>
-                                            <td>{rec.pos}</td>
-                                            <td>{rec.supplyType}</td>
-                                            <td>{rec.grossAdvance}</td>
-                                            <td>{rec.igst}</td>
-                                            <td>{rec.cgst}</td>
-                                            <td>{rec.sgst}</td>
-                                            <td>{rec.cess}</td>
-                                        </tr>
-                                    ))}
+                                    {records.map((rec, idx) => {
+                                        const items = rec.itemDetails || [];
+                                        const totalGross = items.reduce((sum, item) => sum + (parseFloat(item.grossAdvance) || 0), 0).toFixed(2);
+                                        const totalIntegrated = items.reduce((sum, item) => sum + (parseFloat(item.integratedTax) || 0), 0).toFixed(2);
+                                        const totalCentral = items.reduce((sum, item) => sum + (parseFloat(item.centralTax) || 0), 0).toFixed(2);
+                                        const totalState = items.reduce((sum, item) => sum + (parseFloat(item.stateTax) || 0), 0).toFixed(2);
+                                        const totalCess = items.reduce((sum, item) => sum + (parseFloat(item.cess) || 0), 0).toFixed(2);
+
+                                        return (
+                                            <tr key={idx}>
+                                                <td>{rec.pos}</td>
+                                                <td>{rec.supplyType}</td>
+                                                <td>{totalGross}</td>
+                                                <td>{totalIntegrated}</td>
+                                                <td>{totalCentral}</td>
+                                                <td>{totalState}</td>
+                                                <td>{totalCess}</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

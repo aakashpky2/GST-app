@@ -34,7 +34,7 @@ const Verification = () => {
             await handleSaveAndContinue(e, submissionData);
             
             setIsCompleting(true);
-            const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn');
+            const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
             const legalName = localStorage.getItem('gst_legal_name');
             const pan = localStorage.getItem('gst_pan');
 

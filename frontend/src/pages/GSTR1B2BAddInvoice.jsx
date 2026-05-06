@@ -24,6 +24,7 @@ const GSTR1B2BAddInvoice = () => {
         isReverseCharge: false,
         isIntraStateIGST: false,
         isDifferentialPercentage: false,
+        supplyType: 'Inter-State', // Default to Inter-State to avoid showing all tax columns
         itemDetails: [
             { rate: '0%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
             { rate: '0.1%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
@@ -54,20 +55,70 @@ const GSTR1B2BAddInvoice = () => {
             [name]: type === 'checkbox' ? checked : value
         };
 
-        if (name === 'pos' && value !== 'Select') {
-            const homeState = localStorage.getItem('gst_state') || 'Kerala';
-            // If POS starts with the same state name (roughly), it's Intra-State.
-            // In a real app, we'd compare codes. Here we do a simple string check.
-            const isLocal = value.includes(homeState) && homeState !== '';
-            updatedData.supplyType = isLocal ? 'Intra-State' : 'Inter-State';
+        if (name === 'pos') {
+            const selectedPos = value || '';
+            if (selectedPos === 'Select' || selectedPos === '') {
+                updatedData.supplyType = 'Inter-State';
+            } else if (selectedPos.toLowerCase().includes('kerala')) {
+                updatedData.supplyType = 'Intra-State';
+            } else {
+                const homeState = (localStorage.getItem('gst_state') || 'Kerala').toLowerCase();
+                const isLocal = selectedPos.toLowerCase().includes(homeState);
+                updatedData.supplyType = isLocal ? 'Intra-State' : 'Inter-State';
+            }
+
+            // Clear all values when supply type changes to avoid confusion
+            updatedData.itemDetails = formData.itemDetails.map(item => ({
+                ...item,
+                taxableValue: '',
+                integratedTax: '',
+                centralTax: '',
+                stateTax: '',
+                cess: ''
+            }));
         }
 
         setFormData(updatedData);
     };
 
     const handleItemChange = (index, field, value) => {
+        // Strict Rules: Accept only numeric input values for taxableValue
+        if (field === 'taxableValue') {
+            if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+        }
+
         const newItemDetails = [...formData.itemDetails];
         newItemDetails[index][field] = value;
+
+        // Instant Calculation Logic
+        if (field === 'taxableValue') {
+            const taxableAmt = parseFloat(value);
+            const rateStr = newItemDetails[index].rate; // e.g. "3%"
+            const rateVal = parseFloat(rateStr.replace('%', ''));
+
+            if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
+                if (formData.supplyType === 'Intra-State') {
+                    // Split rate equally for Central and State tax
+                    const halfTax = (taxableAmt * (rateVal / 2)) / 100;
+                    const formattedTax = halfTax.toFixed(2);
+                    newItemDetails[index].centralTax = formattedTax;
+                    newItemDetails[index].stateTax = formattedTax;
+                    newItemDetails[index].integratedTax = '';
+                } else {
+                    // Integrated Tax = (Taxable Value × Rate %) / 100
+                    const igst = (taxableAmt * rateVal) / 100;
+                    newItemDetails[index].integratedTax = igst.toFixed(2);
+                    newItemDetails[index].centralTax = '';
+                    newItemDetails[index].stateTax = '';
+                }
+            } else {
+                // Reset all to empty if value is cleared
+                newItemDetails[index].integratedTax = '';
+                newItemDetails[index].centralTax = '';
+                newItemDetails[index].stateTax = '';
+            }
+        }
+
         setFormData(prev => ({ ...prev, itemDetails: newItemDetails }));
     };
 
@@ -119,6 +170,19 @@ const GSTR1B2BAddInvoice = () => {
             setIsSaving(false);
         }
     };
+    // Helper to calculate totals for the footer
+    const calculateTotals = () => {
+        return formData.itemDetails.reduce((acc, item) => {
+            acc.taxableValue += parseFloat(item.taxableValue || 0);
+            acc.integratedTax += parseFloat(item.integratedTax || 0);
+            acc.centralTax += parseFloat(item.centralTax || 0);
+            acc.stateTax += parseFloat(item.stateTax || 0);
+            acc.cess += parseFloat(item.cess || 0);
+            return acc;
+        }, { taxableValue: 0, integratedTax: 0, centralTax: 0, stateTax: 0, cess: 0 });
+    };
+
+    const totals = calculateTotals();
 
     return (
         <div className="dashboard-container" onClick={handleBackdropClick} style={{ backgroundColor: '#f1f3f6' }}>
@@ -237,14 +301,34 @@ const GSTR1B2BAddInvoice = () => {
                                     <option>08-Rajasthan</option>
                                     <option>09-Uttar Pradesh</option>
                                     <option>10-Bihar</option>
+                                    <option>11-Sikkim</option>
+                                    <option>12-Arunachal Pradesh</option>
+                                    <option>13-Nagaland</option>
+                                    <option>14-Manipur</option>
+                                    <option>15-Mizoram</option>
+                                    <option>16-Tripura</option>
+                                    <option>17-Meghalaya</option>
+                                    <option>18-Assam</option>
                                     <option>19-West Bengal</option>
+                                    <option>20-Jharkhand</option>
+                                    <option>21-Odisha</option>
+                                    <option>22-Chhattisgarh</option>
+                                    <option>23-Madhya Pradesh</option>
                                     <option>24-Gujarat</option>
+                                    <option>25-Daman & Diu</option>
+                                    <option>26-Dadra & Nagar Haveli</option>
                                     <option>27-Maharashtra</option>
                                     <option>29-Karnataka</option>
+                                    <option>30-Goa</option>
+                                    <option>31-Lakshadweep</option>
                                     <option>32-Kerala</option>
                                     <option>33-Tamil Nadu</option>
+                                    <option>34-Puducherry</option>
+                                    <option>35-Andaman & Nicobar Islands</option>
                                     <option>36-Telangana</option>
                                     <option>37-Andhra Pradesh</option>
+                                    <option>38-Ladakh</option>
+                                    <option>97-Other Territory</option>
                                 </select>
                             </div>
                             <div className="invoice-form-group">
@@ -280,9 +364,14 @@ const GSTR1B2BAddInvoice = () => {
                                         <th colSpan={formData.supplyType === 'Intra-State' ? 3 : (formData.supplyType === 'Inter-State' ? 2 : 4)} style={{ textAlign: 'center' }}>Amount of Tax</th>
                                     </tr>
                                     <tr>
-                                        {formData.supplyType !== 'Intra-State' && <th style={{ width: '20%' }}>Integrated tax (₹) <span className="red-dot">*</span></th>}
-                                        {formData.supplyType !== 'Inter-State' && <th style={{ width: '20%' }}>Central tax (₹) <span className="red-dot">*</span></th>}
-                                        {formData.supplyType !== 'Inter-State' && <th style={{ width: '20%' }}>State/UT tax (₹) <span className="red-dot">*</span></th>}
+                                        {formData.supplyType === 'Intra-State' ? (
+                                            <>
+                                                <th style={{ width: '20%' }}>Central tax (₹) <span className="red-dot">*</span></th>
+                                                <th style={{ width: '20%' }}>State/UT tax (₹) <span className="red-dot">*</span></th>
+                                            </>
+                                        ) : (
+                                            <th style={{ width: '20%' }}>Integrated tax (₹) <span className="red-dot">*</span></th>
+                                        )}
                                         <th style={{ width: '20%' }}>Cess (₹)</th>
                                     </tr>
                                 </thead>
@@ -304,9 +393,10 @@ const GSTR1B2BAddInvoice = () => {
                                                     <input
                                                         type="text"
                                                         value={item.integratedTax}
-                                                        onChange={(e) => handleItemChange(index, 'integratedTax', e.target.value)}
+                                                        readOnly
                                                         disabled={isZeroRate}
-                                                        className={isZeroRate ? 'disabled-input' : ''}
+                                                        className={(isZeroRate || item.integratedTax) ? 'disabled-input' : ''}
+                                                        placeholder="0.00"
                                                     />
                                                 </td>
                                             )}
@@ -316,18 +406,20 @@ const GSTR1B2BAddInvoice = () => {
                                                     <input
                                                         type="text"
                                                         value={item.centralTax}
-                                                        onChange={(e) => handleItemChange(index, 'centralTax', e.target.value)}
+                                                        readOnly
                                                         disabled={isZeroRate}
-                                                        className={isZeroRate ? 'disabled-input' : ''}
+                                                        className={(isZeroRate || item.centralTax) ? 'disabled-input' : ''}
+                                                        placeholder="0.00"
                                                     />
                                                 </td>
                                                 <td>
                                                     <input
                                                         type="text"
                                                         value={item.stateTax}
-                                                        onChange={(e) => handleItemChange(index, 'stateTax', e.target.value)}
+                                                        readOnly
                                                         disabled={isZeroRate}
-                                                        className={isZeroRate ? 'disabled-input' : ''}
+                                                        className={(isZeroRate || item.stateTax) ? 'disabled-input' : ''}
+                                                        placeholder="0.00"
                                                     />
                                                 </td>
                                                 </>
@@ -344,6 +436,33 @@ const GSTR1B2BAddInvoice = () => {
                                         </tr>
                                         );
                                     })}
+                                    {/* Total Row - Only shown for Kerala as requested */}
+                                    {(formData.pos || '').toLowerCase().includes('kerala') && (
+                                        <tr className="total-row" style={{ backgroundColor: '#f8fafc', fontWeight: 'bold' }}>
+                                            <td className="rate-cell">Total</td>
+                                            <td>
+                                                <input type="text" value={totals.taxableValue.toFixed(2)} readOnly className="disabled-input" style={{ fontWeight: 'bold' }} />
+                                            </td>
+                                            {formData.supplyType !== 'Intra-State' && (
+                                                <td>
+                                                    <input type="text" value={totals.integratedTax.toFixed(2)} readOnly className="disabled-input" style={{ fontWeight: 'bold' }} />
+                                                </td>
+                                            )}
+                                            {formData.supplyType !== 'Inter-State' && (
+                                                <>
+                                                <td>
+                                                    <input type="text" value={totals.centralTax.toFixed(2)} readOnly className="disabled-input" style={{ fontWeight: 'bold' }} />
+                                                </td>
+                                                <td>
+                                                    <input type="text" value={totals.stateTax.toFixed(2)} readOnly className="disabled-input" style={{ fontWeight: 'bold' }} />
+                                                </td>
+                                                </>
+                                            )}
+                                            <td>
+                                                <input type="text" value={totals.cess.toFixed(2)} readOnly className="disabled-input" style={{ fontWeight: 'bold' }} />
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>

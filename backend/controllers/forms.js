@@ -1434,20 +1434,30 @@ exports.getGSTR1Summary = async (req, res) => {
             sup95: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 }
         };
 
-        // Helper to sum taxes from itemDetails arrays
+        // Helper to sum taxes from itemDetails arrays or taxDetails objects
         const sumItemDetails = (items) => {
             let totals = { value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 };
-            if (!Array.isArray(items)) return totals;
-            items.forEach(item => {
-                const taxable = parseFloat(item.taxableValue || item.taxable_value) || 0;
-                const rate = parseFloat(item.rate) || 0;
-                totals.value += taxable;
-                // Basic tax calculation if not provided
-                totals.igst += parseFloat(item.igst || item.integrated_tax) || 0;
-                totals.cgst += parseFloat(item.cgst || item.central_tax) || 0;
-                totals.sgst += parseFloat(item.sgst || item.state_tax || item.state_ut_tax) || 0;
-                totals.cess += parseFloat(item.cess) || 0;
-            });
+            
+            // Handle Array of items (B2B, CDNR, etc.)
+            if (Array.isArray(items)) {
+                items.forEach(item => {
+                    totals.value += parseFloat(item.taxableValue || item.taxable_value || item.grossAdvance || item.gross_advance_received || item.grossAdjustment || item.gross_advance_adjusted) || 0;
+                    totals.igst += parseFloat(item.integratedTax || item.integrated_tax || item.igst) || 0;
+                    totals.cgst += parseFloat(item.centralTax || item.central_tax || item.cgst) || 0;
+                    totals.sgst += parseFloat(item.stateTax || item.state_tax || item.sgst || item.state_ut_tax) || 0;
+                    totals.cess += parseFloat(item.cess) || 0;
+                });
+            } 
+            // Handle Object of rates (CDNUR)
+            else if (items && typeof items === 'object') {
+                Object.values(items).forEach(item => {
+                    totals.value += parseFloat(item.taxableValue) || 0;
+                    totals.igst += parseFloat(item.integratedTax) || 0;
+                    totals.cgst += parseFloat(item.centralTax) || 0;
+                    totals.sgst += parseFloat(item.stateTax) || 0;
+                    totals.cess += parseFloat(item.cess) || 0;
+                });
+            }
             return totals;
         };
 
@@ -1544,11 +1554,13 @@ exports.getGSTR1Summary = async (req, res) => {
         const { data: cdnrList } = await supabase.from('gstr1_cdnr_invoices').select('*').eq('trn', trn);
         if (cdnrList) {
             cdnrList.forEach(inv => {
-                const value = parseFloat(inv.note_value) || 0;
-                // For simplicity, we'll use note_value as "value" here. 
-                // Actual taxes would depend on linked invoice.
+                const totals = sumItemDetails(inv.tax_items || inv.itemDetails);
                 summary.cdnr.records++;
-                summary.cdnr.value += value;
+                summary.cdnr.value += totals.value || parseFloat(inv.note_value) || 0;
+                summary.cdnr.igst += totals.igst;
+                summary.cdnr.cgst += totals.cgst;
+                summary.cdnr.sgst += totals.sgst;
+                summary.cdnr.cess += totals.cess;
             });
         }
 
@@ -1556,8 +1568,13 @@ exports.getGSTR1Summary = async (req, res) => {
         const { data: cdnurList } = await supabase.from('gstr1_cdnur_invoices').select('*').eq('trn', trn);
         if (cdnurList) {
             cdnurList.forEach(inv => {
+                const totals = sumItemDetails(inv.tax_details || inv.taxDetails);
                 summary.cdnur.records++;
-                summary.cdnur.value += parseFloat(inv.note_value) || 0;
+                summary.cdnur.value += totals.value || parseFloat(inv.note_value) || 0;
+                summary.cdnur.igst += totals.igst;
+                summary.cdnur.cgst += totals.cgst;
+                summary.cdnur.sgst += totals.sgst;
+                summary.cdnur.cess += totals.cess;
             });
         }
 
@@ -1565,12 +1582,13 @@ exports.getGSTR1Summary = async (req, res) => {
         const { data: advList } = await supabase.from('gstr1_adv_tax').select('*').eq('trn', trn);
         if (advList) {
             advList.forEach(inv => {
+                const totals = sumItemDetails(inv.item_details || inv.itemDetails);
                 summary.advTax.records++;
-                summary.advTax.value += parseFloat(inv.gross_advance_received) || 0;
-                summary.advTax.igst += parseFloat(inv.integrated_tax) || 0;
-                summary.advTax.cgst += parseFloat(inv.central_tax) || 0;
-                summary.advTax.sgst += parseFloat(inv.state_ut_tax) || 0;
-                summary.advTax.cess += parseFloat(inv.cess) || 0;
+                summary.advTax.value += totals.value || parseFloat(inv.gross_advance_received) || 0;
+                summary.advTax.igst += totals.igst;
+                summary.advTax.cgst += totals.cgst;
+                summary.advTax.sgst += totals.sgst;
+                summary.advTax.cess += totals.cess;
             });
         }
 
@@ -1578,12 +1596,13 @@ exports.getGSTR1Summary = async (req, res) => {
         const { data: adjList } = await supabase.from('gstr1_adj_advances').select('*').eq('trn', trn);
         if (adjList) {
             adjList.forEach(inv => {
+                const totals = sumItemDetails(inv.item_details || inv.itemDetails);
                 summary.adjAdvances.records++;
-                summary.adjAdvances.value += parseFloat(inv.gross_advance_adjusted) || 0;
-                summary.adjAdvances.igst += parseFloat(inv.integrated_tax) || 0;
-                summary.adjAdvances.cgst += parseFloat(inv.central_tax) || 0;
-                summary.adjAdvances.sgst += parseFloat(inv.state_ut_tax) || 0;
-                summary.adjAdvances.cess += parseFloat(inv.cess) || 0;
+                summary.adjAdvances.value += totals.value || parseFloat(inv.gross_advance_adjusted) || 0;
+                summary.adjAdvances.igst += totals.igst;
+                summary.adjAdvances.cgst += totals.cgst;
+                summary.adjAdvances.sgst += totals.sgst;
+                summary.adjAdvances.cess += totals.cess;
             });
         }
 
