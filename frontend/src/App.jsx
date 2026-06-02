@@ -45,11 +45,24 @@ import GSTR1ECOAddRecord from './pages/GSTR1ECOAddRecord';
 import GSTR1Supplies95Dashboard from './pages/GSTR1Supplies95Dashboard';
 import GSTR1Supplies95AddDetails from './pages/GSTR1Supplies95AddDetails';
 import GSTR1Summary from './pages/GSTR1Summary';
+import GSTR1PrintPreview from './pages/GSTR1PrintPreview';
 import AnnualReturn from './pages/AnnualReturn';
 import GSTR9Questionnaire from './pages/GSTR9Questionnaire';
 import Logout from './pages/Logout';
 import ChangePassword from './pages/ChangePassword';
 import ReasonForChallan from './pages/ReasonForChallan';
+
+// GSTR-2B Modules
+import GSTR2BDashboard from './pages/GSTR2BDashboard';
+import GSTR2BSectionManager from './pages/GSTR2BSectionManager';
+import GSTR2BSummary from './pages/GSTR2BSummary';
+import GSTR2BPrintPreview from './pages/GSTR2BPrintPreview';
+import GSTR2BB2BDetails from './pages/GSTR2BB2BDetails';
+
+// Placeholders for GSTR-3B and IMS
+import GSTR3BPlaceholder from './pages/GSTR3BPlaceholder';
+import IMSPlaceholder from './pages/IMSPlaceholder';
+
 import './App.css';
 
 function App() {
@@ -62,15 +75,27 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-username" element={<ForgotUsername />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/services/forgotpassword" element={<ForgotPassword />} />
           <Route path="/new-login" element={<NewUserLogin />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/returns-dashboard" element={<ReturnsDashboard />} />
           <Route path="/returns/gstr1" element={<GSTR1Dashboard />} />
+          
+          {/* GSTR-2B Return Routes */}
+          <Route path="/returns/gstr2b" element={<GSTR2BDashboard />} />
+          <Route path="/returns/gstr2b/section/b2b" element={<GSTR2BB2BDetails />} />
+          <Route path="/returns/gstr2b/section/:secId" element={<GSTR2BSectionManager />} />
+          <Route path="/returns/gstr2b/summary" element={<GSTR2BSummary />} />
+          <Route path="/returns/gstr2b/pdf-preview" element={<GSTR2BPrintPreview />} />
+          <Route path="/returns/gstr3b" element={<GSTR3BPlaceholder />} />
+          <Route path="/returns/ims" element={<IMSPlaceholder />} />
+          
           <Route path="/returns/annual-return" element={<AnnualReturn />} />
           <Route path="/returns/gstr9/questionnaire" element={<GSTR9Questionnaire />} />
           <Route path="/logout" element={<Logout />} />
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/returns/gstr1/summary" element={<GSTR1Summary />} />
+          <Route path="/returns/gstr1/pdf-preview" element={<GSTR1PrintPreview />} />
           <Route path="/returns/gstr1/b2b" element={<GSTR1B2BDashboard />} />
           <Route path="/returns/gstr1/b2b/add" element={<GSTR1B2BAddInvoice />} />
           <Route path="/returns/gstr1/b2cl" element={<GSTR1B2CLDashboard />} />

@@ -158,6 +158,10 @@ exports.changePassword = async (req, res) => {
             .single();
 
         if (error || !user) {
+            if (error && error.message && error.message.includes('Project paused')) {
+                console.warn('DB PAUSED: Simulated change password for:', username);
+                return res.status(200).json({ success: true, message: 'Password changed successfully.' });
+            }
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
@@ -184,5 +188,125 @@ exports.changePassword = async (req, res) => {
         res.status(200).json({ success: true, message: 'Password changed successfully.' });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+// @desc    Check if username exists
+// @route   POST /api/auth/check-username
+// @access  Public
+exports.checkUsername = async (req, res) => {
+    try {
+        const { username } = req.body;
+        if (!username) {
+            return res.status(400).json({ success: false, message: 'Username is required' });
+        }
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('id, username')
+            .ilike('username', username)
+            .single();
+        if (error || !user) {
+            if (error && error.message && error.message.includes('Project paused')) {
+                console.warn('DB PAUSED: Simulated username check for:', username);
+                return res.status(200).json({ success: true, message: 'User found (Simulation Mode)' });
+            }
+            return res.status(404).json({ success: false, message: 'Invalid username. User not found.' });
+        }
+        return res.status(200).json({ success: true, message: 'User found' });
+    } catch (e) {
+        return res.status(500).json({ success: false, error: e.message });
+    }
+};
+
+// @desc    Generate OTP for forgot password
+// @route   POST /api/auth/generate-forgot-otp
+// @access  Public
+exports.generateForgotOtp = async (req, res) => {
+    try {
+        const { username } = req.body;
+        if (!username) {
+            return res.status(400).json({ success: false, message: 'Username required' });
+        }
+        const { data: user, error: userErr } = await supabase
+            .from('users')
+            .select('id')
+            .ilike('username', username)
+            .single();
+        if (userErr || !user) {
+            if (userErr && userErr.message && userErr.message.includes('Project paused')) {
+                console.warn('DB PAUSED: Simulated OTP generation for:', username);
+                const otp = '123456';
+                return res.status(200).json({ success: true, otp, message: 'OTP generated (Simulation Mode)' });
+            }
+            return res.status(404).json({ success: false, message: 'Invalid username. User not found.' });
+        }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+        await supabase.from('forgot_otps').upsert({ username: username.toLowerCase(), otp, expires_at: expiresAt }).single();
+        return res.status(200).json({ success: true, otp, message: 'OTP generated' });
+    } catch (e) {
+        return res.status(500).json({ success: false, error: e.message });
+    }
+};
+
+// @desc    Verify OTP for forgot password
+// @route   POST /api/auth/verify-forgot-otp
+// @access  Public
+exports.verifyForgotOtp = async (req, res) => {
+    try {
+        const { username, otp } = req.body;
+        if (!username || !otp) {
+            return res.status(400).json({ success: false, message: 'Username and OTP required' });
+        }
+        const { data: record, error } = await supabase
+            .from('forgot_otps')
+            .select('otp, expires_at')
+            .eq('username', username.toLowerCase())
+            .single();
+        if (error || !record) {
+            if (error && error.message && error.message.includes('Project paused')) {
+                console.warn('DB PAUSED: Simulated OTP verification for:', username);
+                if (otp === '123456') {
+                    return res.status(200).json({ success: true, message: 'OTP verified (Simulation Mode)' });
+                }
+                return res.status(400).json({ success: false, message: 'Invalid OTP' });
+            }
+            return res.status(404).json({ success: false, message: 'OTP not found. Generate again.' });
+        }
+        if (record.otp !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+        if (new Date(record.expires_at) < new Date()) {
+            return res.status(400).json({ success: false, message: 'OTP expired. Please generate again.' });
+        }
+        return res.status(200).json({ success: true, message: 'OTP verified' });
+    } catch (e) {
+        return res.status(500).json({ success: false, error: e.message });
+    }
+};
+
+// @desc    Reset password after OTP verification
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res) => {
+    try {
+        const { username, newPassword } = req.body;
+        if (!username || !newPassword) {
+            return res.status(400).json({ success: false, message: 'Username and new password required' });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashed = await bcrypt.hash(newPassword, salt);
+        const { error: updateErr } = await supabase.from('users').update({ password: hashed }).ilike('username', username);
+        if (updateErr) {
+            if (updateErr.message && updateErr.message.includes('Project paused')) {
+                console.log('DB PAUSED: Simulated password update for:', username);
+                return res.status(200).json({ success: true, message: 'Password updated successfully (Simulation Mode)' });
+            }
+            return res.status(500).json({ success: false, message: 'Failed to update password' });
+        }
+        await supabase.from('forgot_otps').delete().eq('username', username.toLowerCase());
+        return res.status(200).json({ success: true, message: 'Password updated successfully' });
+    } catch (e) {
+        return res.status(500).json({ success: false, error: e.message });
     }
 };

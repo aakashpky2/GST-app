@@ -5,6 +5,8 @@ const Layout = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
     const [activeMenu, setActiveMenu] = useState(null);
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [activeSubMenu, setActiveSubMenu] = useState('registration');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     // All paths that use the GST portal's own nav (bd-navbar) instead of the Layout navbar
@@ -168,64 +170,220 @@ const Layout = ({ children }) => {
                 </div>
             </header>
 
+            <style>{`
+                .navbar-wrapper {
+                    position: relative;
+                }
+                .nav-item {
+                    display: flex;
+                }
+                .dropdown-panel {
+                    position: absolute;
+                    top: 100%;
+                    left: 0;
+                    width: 100%;
+                    background: #fff;
+                    z-index: 9999;
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+                }
+                .dropdown-main-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 0;
+                    background: #f5f8fa;
+                }
+                .dropdown-main-item {
+                    padding: 14px 22px;
+                    color: #001b5c;
+                    font-size: 15px;
+                    cursor: pointer;
+                }
+                .dropdown-main-item.active {
+                    border-bottom: 2px solid #001b5c;
+                    background: #fff;
+                }
+                .dropdown-sub-row {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    padding: 12px 22px;
+                    gap: 14px 80px;
+                }
+                .dropdown-sub-row a {
+                    color: #001b5c;
+                    font-size: 15px;
+                    text-decoration: none;
+                }
+                .dropdown-sub-row a:hover {
+                    color: #0070c9;
+                }
+                .services-active-teal {
+                    background-color: #00a2b0 !important;
+                }
+                .services-active-btn {
+                    color: #ffffff !important;
+                    background-color: #00a2b0 !important;
+                }
+            `}</style>
+            
             {/* Navigation Bar */}
-            <nav className="navbar">
+            <nav className="navbar navbar-wrapper" style={{ overflow: 'visible' }}>
                 {!isDashboard ? (
-                    <Link to="/" className={`nav-link ${location.pathname === '/' || location.pathname === '/logout' ? 'active' : ''}`} onClick={() => setActiveMenu(null)}>Home</Link>
+                    <Link to="/" className={`nav-link ${location.pathname === '/' || location.pathname === '/logout' ? 'active' : ''}`} onClick={() => setActiveDropdown(null)}>Home</Link>
                 ) : (
-                    <Link to="/dashboard" className="nav-link active" onClick={() => setActiveMenu(null)}>Dashboard</Link>
+                    <Link to="/dashboard" className="nav-link active" onClick={() => setActiveDropdown(null)}>Dashboard</Link>
                 )}
-                <button
-                    className={`nav-link-btn ${activeMenu === 'services' ? 'active-link' : ''}`}
-                    onClick={() => toggleMenu('services')}
+                
+                <div 
+                    className={`nav-item ${location.pathname === '/forgot-password' || location.pathname === '/services/forgotpassword' ? 'services-active-teal' : ''}`}
+                    onMouseEnter={() => setActiveDropdown('services')}
+                    onMouseLeave={() => setActiveDropdown(null)}
                 >
-                    Services ▾
-                </button>
-                <a href="#" className="nav-link" onClick={() => setActiveMenu(null)}>GST Law</a>
-                <button
-                    className={`nav-link-btn ${activeMenu === 'downloads' ? 'active-link' : ''}`}
-                    onClick={() => toggleMenu('downloads')}
+                    <button className={`nav-link-btn ${activeDropdown === 'services' ? 'active-link' : ''} ${location.pathname === '/forgot-password' || location.pathname === '/services/forgotpassword' ? 'services-active-btn' : ''}`}>
+                        Services ▾
+                    </button>
+                </div>
+
+                <a href="#" className="nav-link" onClick={() => setActiveDropdown(null)}>GST Law</a>
+                
+                <div 
+                    className="nav-item"
+                    onMouseEnter={() => setActiveDropdown('downloads')}
+                    onMouseLeave={() => setActiveDropdown(null)}
                 >
-                    Downloads ▾
-                </button>
-                <button
-                    className={`nav-link-btn ${activeMenu === 'search' ? 'active-link' : ''}`}
-                    onClick={() => toggleMenu('search')}
+                    <button className={`nav-link-btn ${activeDropdown === 'downloads' ? 'active-link' : ''}`}>
+                        Downloads ▾
+                    </button>
+                </div>
+
+                <div 
+                    className="nav-item"
+                    onMouseEnter={() => setActiveDropdown('searchTaxpayer')}
+                    onMouseLeave={() => setActiveDropdown(null)}
                 >
-                    Search Taxpayer ▾
-                </button>
-                <a href="#" className="nav-link" onClick={() => setActiveMenu(null)}>Help and Taxpayer Facilities</a>
-                <a href="#" className="nav-link" onClick={() => setActiveMenu(null)}>e-Invoice</a>
-                <a href="#" className="nav-link" onClick={() => setActiveMenu(null)}>News and Updates</a>
+                    <button className={`nav-link-btn ${activeDropdown === 'searchTaxpayer' ? 'active-link' : ''}`}>
+                        Search Taxpayer ▾
+                    </button>
+                </div>
+
+                <a href="#" className="nav-link" onClick={() => setActiveDropdown(null)}>Help and Taxpayer Facilities</a>
+                <a href="#" className="nav-link" onClick={() => setActiveDropdown(null)}>e-Invoice</a>
+                <a href="#" className="nav-link" onClick={() => setActiveDropdown(null)}>News and Updates</a>
+
+                {/* Dropdowns */}
+                {activeDropdown === 'services' && (
+                    <div 
+                        className="dropdown-panel" 
+                        onMouseEnter={() => setActiveDropdown('services')}
+                        onMouseLeave={() => setActiveDropdown(null)}
+                    >
+                        <div className="dropdown-main-row">
+                            <div className={`dropdown-main-item ${activeSubMenu === 'registration' ? 'active' : ''}`} onMouseEnter={() => setActiveSubMenu('registration')}>Registration</div>
+                            <div className={`dropdown-main-item ${activeSubMenu === 'payments' ? 'active' : ''}`} onMouseEnter={() => setActiveSubMenu('payments')}>Payments</div>
+                            <div className={`dropdown-main-item ${activeSubMenu === 'userServices' ? 'active' : ''}`} onMouseEnter={() => setActiveSubMenu('userServices')}>User Services</div>
+                            <div className={`dropdown-main-item ${activeSubMenu === 'refunds' ? 'active' : ''}`} onMouseEnter={() => setActiveSubMenu('refunds')}>Refunds</div>
+                            <div className="dropdown-main-item" onMouseEnter={() => setActiveSubMenu('eway')}>e-Way Bill System</div>
+                            <div className="dropdown-main-item" onMouseEnter={() => setActiveSubMenu('track')}>Track Application Status</div>
+                        </div>
+                        {activeSubMenu === 'registration' && (
+                            <div className="dropdown-sub-row">
+                                <Link to="/registration" onClick={() => setActiveDropdown(null)}>New Registration</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Track Application Status</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Application for Filing Clarifications</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Home State GSK selection for Promoter/Director of specific COBs</Link>
+                            </div>
+                        )}
+                        {activeSubMenu === 'payments' && (
+                            <div className="dropdown-sub-row">
+                                <Link to="/payments/create-challan" onClick={() => setActiveDropdown(null)}>Create Challan</Link>
+                                <Link to="/payments/track-status" onClick={() => setActiveDropdown(null)}>Track Payment Status</Link>
+                                <Link to="/payments/grievance" onClick={() => setActiveDropdown(null)}>Grievance against Payment (GST PMT-07)</Link>
+                            </div>
+                        )}
+                        {activeSubMenu === 'userServices' && (
+                            <div className="dropdown-sub-row">
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Search HSN Code</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Generate User ID for Unregistered Applicant</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Cause List</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Verify RFN</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Holiday List</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Locate GST Practitioner (GSTP)</Link>
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Search Advance Ruling</Link>
+                            </div>
+                        )}
+                        {activeSubMenu === 'refunds' && (
+                            <div className="dropdown-sub-row">
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>Track Application Status</Link>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeDropdown === 'downloads' && (
+                    <div 
+                        className="dropdown-panel" 
+                        onMouseEnter={() => setActiveDropdown('downloads')}
+                        onMouseLeave={() => setActiveDropdown(null)}
+                    >
+                        <div className="dropdown-main-row">
+                            <div className={`dropdown-main-item ${activeSubMenu === 'offlineTools' || activeSubMenu === 'registration' || activeSubMenu === 'payments' || activeSubMenu === 'userServices' || activeSubMenu === 'refunds' || activeSubMenu === 'eway' || activeSubMenu === 'track' ? 'active' : 'active'}`} onMouseEnter={() => setActiveSubMenu('offlineTools')}>Offline Tools</div>
+                            <div className={`dropdown-main-item ${activeSubMenu === 'gstStatistics' ? 'active' : ''}`} onMouseEnter={() => setActiveSubMenu('gstStatistics')}>GST Statistics</div>
+                        </div>
+                        {activeSubMenu !== 'gstStatistics' && (
+                            <div className="dropdown-sub-row" style={{ alignItems: 'start' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Returns Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Tran-1 Offline Tools</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR3B Offline Utility</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>ITC03 Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GST ARA 01 - Application for Advance Ruling</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR 6 Offline Tool With Amendments</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR7 Offline Utility</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>SRM-I Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR10 Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-9A Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-4 Offline Tool (Annual)</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>IMS Offline Tool</Link>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Matching Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Tran-2 Offline Tools</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>ITC01 Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>ITC04 Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-4 Offline Tool (Quarterly filing)</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR 11 Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR8 Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>SRM-II Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-9 Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-9C Offline Tool</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GST DRC-22A - Application for Objection to Provisional Attachment Order</Link>
+                                    <Link to="#" onClick={() => setActiveDropdown(null)}>TDS & TCS Credit Received Offline Tool</Link>
+                                </div>
+                            </div>
+                        )}
+                        {activeSubMenu === 'gstStatistics' && (
+                            <div className="dropdown-sub-row">
+                                <Link to="#" onClick={() => setActiveDropdown(null)}>GST Statistics</Link>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {activeDropdown === 'searchTaxpayer' && (
+                    <div 
+                        className="dropdown-panel" 
+                        onMouseEnter={() => setActiveDropdown('searchTaxpayer')}
+                        onMouseLeave={() => setActiveDropdown(null)}
+                    >
+                        <div className="dropdown-main-row" style={{ background: '#fff', padding: '14px 22px', gap: '34px' }}>
+                            <Link to="/search-taxpayer/gstin" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search by GSTIN/UIN</Link>
+                            <Link to="/search-taxpayer/pan" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search by PAN</Link>
+                            <Link to="/search-taxpayer/migrated" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search Migrated Taxpayer</Link>
+                            <Link to="/search-taxpayer/composition" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search Composition Taxpayer</Link>
+                            <Link to="/search-taxpayer/cancelled" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search Cancelled Provisional IDs</Link>
+                        </div>
+                    </div>
+                )}
             </nav>
-
-            {/* Sub-navbars */}
-            {activeMenu === 'services' && (
-                <div className="sub-navbar">
-                    <Link to="/registration" className="sub-nav-link" onClick={() => setActiveMenu(null)}>Registration</Link>
-                    <a href="#" className="sub-nav-link">Payments</a>
-                    <a href="#" className="sub-nav-link">User Services</a>
-                    <a href="#" className="sub-nav-link">Refunds</a>
-                    <a href="#" className="sub-nav-link">e-Way Bill System</a>
-                    <a href="#" className="sub-nav-link">Track Application Status</a>
-                </div>
-            )}
-
-            {activeMenu === 'downloads' && (
-                <div className="sub-navbar">
-                    <a href="#" className="sub-nav-link">Offline Tools</a>
-                    <a href="#" className="sub-nav-link">GST Statistics</a>
-                </div>
-            )}
-
-            {activeMenu === 'search' && (
-                <div className="sub-navbar">
-                    <a href="#" className="sub-nav-link">Search by GSTIN/UIN</a>
-                    <a href="#" className="sub-nav-link">Search by PAN</a>
-                    <a href="#" className="sub-nav-link">Search Temporary ID</a>
-                    <a href="#" className="sub-nav-link">Search Composition Taxpayer</a>
-                </div>
-            )}
 
             {/* Page Content */}
             <main style={isDashboard ? { padding: 0, margin: 0 } : {}}>

@@ -384,6 +384,7 @@ const GSTR1Dashboard = () => {
                     <button className="gstr1-btn-primary">DOWNLOAD DETAILS FROM E-INVOICES (EXCEL)</button>
                     <button className="gstr1-btn-primary" onClick={handleReset}>RESET</button>
                     <button className="gstr1-btn-primary" onClick={() => navigate('/returns/gstr1/summary')}>GENERATE SUMMARY</button>
+                    <button className="gstr1-btn-primary" style={{ background: '#e65100' }} onClick={() => navigate('/returns/gstr1/pdf-preview?fy=2025-26&month=March')}>GENERATE PDF</button>
                 </div>
 
             </div>

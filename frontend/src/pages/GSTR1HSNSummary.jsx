@@ -64,6 +64,11 @@ const GSTR1HSNSummary = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
+        // Restriction: Only positive numeric inputs allowed for tax and numeric values
+        if (['totalQuantity', 'totalTaxableValue', 'integratedTax', 'centralTax', 'stateTax', 'cess'].includes(name)) {
+            if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+        }
         
         setFormData(prev => {
             let updated = { ...prev, [name]: value };
@@ -101,13 +106,18 @@ const GSTR1HSNSummary = () => {
                 }
             }
 
+            // Mirror Central Tax to State/UT Tax
+            if (name === 'centralTax') {
+                updated.stateTax = value;
+            }
+
             return updated;
         });
     };
 
     const handleAdd = async () => {
         if (!formData.hsn) {
-            toast.error('Please select an HSN from the list');
+            toast.error('Please enter a valid HSN Code');
             return;
         }
 
@@ -214,7 +224,7 @@ const GSTR1HSNSummary = () => {
                     <div className="hsn-instructions">
                         <p>Note:</p>
                         <ol>
-                            <li>Please select HSN from the search results in dropdown only. Manual entry of HSN will not be available.</li>
+                            <li>Please enter a valid HSN Code (e.g. 8517, 8471, 9983, 6109, 1006) directly into the field.</li>
                             <li>Description cannot be entered manually under "Description as per HSN Code" field but can be entered manually under "Description" field.</li>
                             <li>Kindly click on save button after any modification( add, edit) to save the changes</li>
                         </ol>
@@ -270,16 +280,10 @@ const GSTR1HSNSummary = () => {
                                 <input
                                     type="text"
                                     name="hsn"
-                                    placeholder="Search HSN Code (e.g. 8517, 1006...)"
+                                    placeholder="Enter HSN Code (e.g. 8517, 8471...)"
                                     value={formData.hsn}
                                     onChange={handleChange}
-                                    list="hsn-list"
                                 />
-                                <datalist id="hsn-list">
-                                    {hsnMaster.map(item => (
-                                        <option key={item.hsn} value={item.hsn}>{item.hsn} - {item.description}</option>
-                                    ))}
-                                </datalist>
                             </div>
                             <div className="hsn-form-group">
                                 <label>Description</label>
@@ -360,8 +364,7 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="integratedTax"
                                     value={formData.integratedTax}
-                                    readOnly
-                                    className="disabled-input"
+                                    onChange={handleChange}
                                     placeholder="0.00"
                                 />
                             </div>
@@ -371,8 +374,7 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="centralTax"
                                     value={formData.centralTax}
-                                    readOnly
-                                    className="disabled-input"
+                                    onChange={handleChange}
                                     placeholder="0.00"
                                 />
                             </div>
@@ -383,8 +385,7 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="stateTax"
                                     value={formData.stateTax}
-                                    readOnly
-                                    className="disabled-input"
+                                    onChange={handleChange}
                                     placeholder="0.00"
                                 />
                             </div>
@@ -394,8 +395,7 @@ const GSTR1HSNSummary = () => {
                                     type="text"
                                     name="cess"
                                     value={formData.cess}
-                                    readOnly
-                                    className="disabled-input"
+                                    onChange={handleChange}
                                     placeholder="0.00"
                                 />
                             </div>

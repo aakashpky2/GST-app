@@ -148,6 +148,98 @@
     cursor: not-allowed;
 }
 
+.btn-summary-file.active {
+    background-color: #26a69a !important;
+    color: white;
+    cursor: pointer;
+}
+
 .blue-subtext {
     color: #2196f3;
+}
+
+/* Expansion Drawers & Recipient Sub-Tables */
+.section-row-main {
+    cursor: pointer;
+    background-color: #fafafa;
+}
+
+.section-row-main:hover {
+    background-color: #f0f4c3 !important;
+}
+
+.section-arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    margin-right: 8px;
+    font-size: 10px;
+    color: #26a69a;
+}
+
+.section-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+.nested-summary-container {
+    background-color: #fafafa;
+    padding: 10px 20px !important;
+    border-bottom: 1px solid #ddd;
+}
+
+.nested-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px;
+    font-size: 12px;
+    border: 1px solid #cfd8dc;
+}
+
+.nested-summary-table th {
+    background-color: #eceff1 !important;
+    color: #37474f;
+    font-weight: 600;
+    border: 1px solid #cfd8dc;
+    padding: 8px 10px;
+}
+
+.nested-summary-table td {
+    border: 1px solid #cfd8dc;
+    padding: 8px 10px;
+    background-color: #ffffff;
+}
+
+.nested-recipient-row {
+    cursor: pointer;
+    background-color: #f9fbe7 !important;
+}
+
+.nested-recipient-row:hover {
+    background-color: #f4f5db !important;
+}
+
+/* Print Rules for GSTR-1 Summary */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #root, .dashboard-container, .gstr1-summary-content, .gstr1-summary-content * {
+        visibility: visible;
+    }
+    .gstr1-summary-content {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    .summary-actions-bottom,
+    .dashboard-breadcrumb-bar,
+    .dashboard-footer-bar,
+    .bottom-info-blue-bar,
+    .expand-link,
+    .blue-subtext,
+    .gstr1-btn-icon {
+        display: none !important;
+    }
 }

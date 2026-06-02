@@ -42,6 +42,22 @@ const GSTR1Supplies95Dashboard = () => {
         }
     };
 
+    const getRecordTaxableValue = (rec) => {
+        if (rec.itemDetails && Array.isArray(rec.itemDetails)) {
+            const sum = rec.itemDetails.reduce((acc, item) => acc + parseFloat(item.taxableValue || 0), 0);
+            if (sum > 0) return sum.toFixed(2);
+        }
+        return parseFloat(rec.taxableValue || rec.totalValue || 0).toFixed(2);
+    };
+
+    const getRecordTaxAmount = (rec, field) => {
+        if (rec.itemDetails && Array.isArray(rec.itemDetails) && rec.itemDetails.length > 0) {
+            const sum = rec.itemDetails.reduce((acc, item) => acc + parseFloat(item[field] || 0), 0);
+            if (sum > 0) return sum.toFixed(2);
+        }
+        return parseFloat(rec[field] || 0).toFixed(2);
+    };
+
     return (
         <div className="dashboard-container" style={{ backgroundColor: '#f1f3f6' }}>
             <div className="dashboard-breadcrumb-bar">
@@ -58,7 +74,7 @@ const GSTR1Supplies95Dashboard = () => {
                     <span>🌐 English</span>
                 </div>
             </div>
-
+ 
             <div className="sup95-main-content">
                 <div className="sup95-header-banner">
                     <div className="sup95-header-flex">
@@ -84,7 +100,7 @@ const GSTR1Supplies95Dashboard = () => {
                         ))}
                     </div>
                 </div>
-
+ 
                 <div className="sup95-body">
                     {records.length === 0 ? (
                         <div className="sup95-empty-alert">
@@ -101,6 +117,14 @@ const GSTR1Supplies95Dashboard = () => {
                                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Doc No</th>
                                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Doc Date</th>
                                         <th style={{ border: '1px solid #ddd', padding: '8px' }}>Taxable Value</th>
+                                        {true && (
+                                            <>
+                                                <th style={{ border: '1px solid #ddd', padding: '8px' }}>IGST (₹)</th>
+                                                <th style={{ border: '1px solid #ddd', padding: '8px' }}>CGST (₹)</th>
+                                                <th style={{ border: '1px solid #ddd', padding: '8px' }}>SGST (₹)</th>
+                                                <th style={{ border: '1px solid #ddd', padding: '8px' }}>Cess (₹)</th>
+                                            </>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -111,7 +135,15 @@ const GSTR1Supplies95Dashboard = () => {
                                             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{rec.pos}</td>
                                             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{rec.documentNumber || '-'}</td>
                                             <td style={{ border: '1px solid #ddd', padding: '8px' }}>{rec.documentDate || '-'}</td>
-                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>{rec.totalValue || rec.taxableValue}</td>
+                                            <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{getRecordTaxableValue(rec)}</td>
+                                            {true && (
+                                                <>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{getRecordTaxAmount(rec, 'integratedTax')}</td>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{getRecordTaxAmount(rec, 'centralTax')}</td>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{getRecordTaxAmount(rec, 'stateTax')}</td>
+                                                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{getRecordTaxAmount(rec, 'cess')}</td>
+                                                </>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>

@@ -29,7 +29,6 @@ const GSTR1CDNRAddInvoice = () => {
         supplyType: '',
         source: '',
         irn: '',
-        irn: '',
         irnDate: '',
         itemDetails: [
             { rate: '0%', taxableValue: '', integratedTax: '', centralTax: '', stateTax: '', cess: '' },
@@ -91,8 +90,18 @@ const GSTR1CDNRAddInvoice = () => {
     };
 
     const handleItemChange = (index, field, value) => {
+        // Strict Rules: Accept only numeric input values for taxableValue and taxes
+        if (['taxableValue', 'centralTax', 'stateTax', 'integratedTax', 'cess'].includes(field)) {
+            if (value !== '' && !/^\d*\.?\d*$/.test(value)) return;
+        }
+
         const newItemDetails = [...formData.itemDetails];
         newItemDetails[index][field] = value;
+
+        // Auto-mirror Central Tax into State/UT Tax
+        if (field === 'centralTax') {
+            newItemDetails[index].stateTax = value;
+        }
 
         // Instant Calculation Logic
         if (field === 'taxableValue') {
@@ -348,8 +357,7 @@ const GSTR1CDNRAddInvoice = () => {
                                                         <input
                                                             type="text"
                                                             value={item.centralTax}
-                                                            readOnly
-                                                            className={item.centralTax ? 'disabled-input' : ''}
+                                                            onChange={(e) => handleItemChange(index, 'centralTax', e.target.value)}
                                                             placeholder="0.00"
                                                         />
                                                     </td>
@@ -357,8 +365,7 @@ const GSTR1CDNRAddInvoice = () => {
                                                         <input
                                                             type="text"
                                                             value={item.stateTax}
-                                                            readOnly
-                                                            className={item.stateTax ? 'disabled-input' : ''}
+                                                            onChange={(e) => handleItemChange(index, 'stateTax', e.target.value)}
                                                             placeholder="0.00"
                                                         />
                                                     </td>

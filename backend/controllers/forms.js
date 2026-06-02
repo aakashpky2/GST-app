@@ -1,4 +1,27 @@
 const supabase = require('../config/supabase');
+const fs = require('fs');
+const path = require('path');
+const LOCAL_DB_PATH = path.join(__dirname, '../local_db.json');
+
+const readLocalDb = () => {
+    try {
+        if (fs.existsSync(LOCAL_DB_PATH)) {
+            const fileData = fs.readFileSync(LOCAL_DB_PATH, 'utf8');
+            return JSON.parse(fileData || '{}');
+        }
+    } catch (e) {
+        console.error("Failed to read local DB:", e.message);
+    }
+    return {};
+};
+
+const writeLocalDb = (data) => {
+    try {
+        fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.error("Failed to write local DB:", e.message);
+    }
+};
 
 // @desc    Save general form tab data
 // @route   POST /api/forms/save-tab
@@ -10,6 +33,12 @@ exports.saveTab = async (req, res) => {
         if (!trn || !tabName) {
             return res.status(400).json({ success: false, message: 'TRN and tabName are required' });
         }
+
+        // Save to local file-based backup always to guarantee persistence in paused/offline mode
+        let localDb = readLocalDb();
+        if (!localDb[trn]) localDb[trn] = {};
+        localDb[trn][tabName] = data;
+        writeLocalDb(localDb);
 
         // We will store all tabs data in a single 'form_submissions' table 
         // Or in 'business_details' under 'form_tabs_data' jsonb column.
@@ -739,6 +768,14 @@ exports.getTab = async (req, res) => {
             }
         }
 
+        // Load from local file-based backup if Supabase is offline/paused or record not found in DB
+        if (Object.keys(returnedData).length === 0) {
+            const localDb = readLocalDb();
+            if (localDb[trn] && localDb[trn][tabName]) {
+                returnedData = localDb[trn][tabName];
+            }
+        }
+
         // If data is empty or it's the specific tab, try structured tables
         if (tabName === 'PromoterPartners' && Object.keys(returnedData).length === 0) {
             const { data: promoData, error: promoErr } = await supabase
@@ -1414,249 +1451,782 @@ exports.resetForm = async (req, res) => {
 exports.getGSTR1Summary = async (req, res) => {
     try {
         const { trn } = req.params;
+        const localDb = readLocalDb();
 
         const summary = {
-            b2b: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            b2bReverse: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            b2cl: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            exports: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            sez: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            deemedExports: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            b2cs: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            nilRated: { records: 0, value: 0, exempted: 0, nonGst: 0 },
-            cdnr: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            cdnur: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            advTax: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            adjAdvances: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            hsn: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            docs: { records: 0 },
-            eco: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-            sup95: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 }
+            b2b: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            b2bReverse: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            b2cl: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            exports: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            sez: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            deemedExports: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            b2cs: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            nilRated: { records: 0, value: 0, exempted: 0, nonGst: 0, invoices: [] },
+            cdnr: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            cdnur: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            advTax: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            adjAdvances: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            hsn: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            docs: { records: 0, invoices: [] },
+            eco: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] },
+            sup95: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, invoices: [] }
         };
 
-        // Helper to sum taxes from itemDetails arrays or taxDetails objects
-        const sumItemDetails = (items) => {
-            let totals = { value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 };
-            
-            // Handle Array of items (B2B, CDNR, etc.)
-            if (Array.isArray(items)) {
-                items.forEach(item => {
-                    totals.value += parseFloat(item.taxableValue || item.taxable_value || item.grossAdvance || item.gross_advance_received || item.grossAdjustment || item.gross_advance_adjusted) || 0;
-                    totals.igst += parseFloat(item.integratedTax || item.integrated_tax || item.igst) || 0;
-                    totals.cgst += parseFloat(item.centralTax || item.central_tax || item.cgst) || 0;
-                    totals.sgst += parseFloat(item.stateTax || item.state_tax || item.sgst || item.state_ut_tax) || 0;
-                    totals.cess += parseFloat(item.cess) || 0;
-                });
-            } 
-            // Handle Object of rates (CDNUR)
-            else if (items && typeof items === 'object') {
-                Object.values(items).forEach(item => {
-                    totals.value += parseFloat(item.taxableValue) || 0;
-                    totals.igst += parseFloat(item.integratedTax) || 0;
-                    totals.cgst += parseFloat(item.centralTax) || 0;
-                    totals.sgst += parseFloat(item.stateTax) || 0;
-                    totals.cess += parseFloat(item.cess) || 0;
-                });
-            }
-            return totals;
+        const getInvoicesList = (tabName) => {
+            const tabData = localDb[trn]?.[tabName];
+            if (!tabData) return [];
+            if (Array.isArray(tabData.invoices)) return tabData.invoices;
+            if (Array.isArray(tabData.records)) return tabData.records;
+            if (Array.isArray(tabData.documents)) return tabData.documents;
+            if (Array.isArray(tabData)) return tabData;
+            return [];
         };
 
         // 1. B2B Invoices
-        const { data: b2bList } = await supabase.from('gstr1_b2b_invoices').select('*').eq('trn', trn);
-        if (b2bList) {
-            b2bList.forEach(inv => {
-                const totals = sumItemDetails(inv.tax_items);
-                if (inv.is_reverse_charge) {
+        const b2bInvoices = getInvoicesList('GSTR1_B2B_Invoices');
+        if (b2bInvoices.length > 0) {
+            b2bInvoices.forEach(inv => {
+                let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                if (Array.isArray(inv.itemDetails)) {
+                    inv.itemDetails.forEach(item => {
+                        val += parseFloat(item.taxableValue) || 0;
+                        igst += parseFloat(item.integratedTax) || 0;
+                        cgst += parseFloat(item.centralTax) || 0;
+                        sgst += parseFloat(item.stateTax) || 0;
+                        cess += parseFloat(item.cess) || 0;
+                    });
+                }
+                if (inv.isReverseCharge) {
                     summary.b2bReverse.records++;
-                    summary.b2bReverse.value += totals.value;
-                    summary.b2bReverse.igst += totals.igst;
-                    summary.b2bReverse.cgst += totals.cgst;
-                    summary.b2bReverse.sgst += totals.sgst;
-                    summary.b2bReverse.cess += totals.cess;
-                } else if (inv.is_sez_with_payment || inv.is_sez_without_payment) {
+                    summary.b2bReverse.value += val;
+                    summary.b2bReverse.igst += igst;
+                    summary.b2bReverse.cgst += cgst;
+                    summary.b2bReverse.sgst += sgst;
+                    summary.b2bReverse.cess += cess;
+                } else if (inv.isSEZWithPayment || inv.isSEZWithoutPayment) {
                     summary.sez.records++;
-                    summary.sez.value += totals.value;
-                    summary.sez.igst += totals.igst;
-                    summary.sez.cgst += totals.cgst;
-                    summary.sez.sgst += totals.sgst;
-                    summary.sez.cess += totals.cess;
-                } else if (inv.is_deemed_export) {
+                    summary.sez.value += val;
+                    summary.sez.igst += igst;
+                    summary.sez.cgst += cgst;
+                    summary.sez.sgst += sgst;
+                    summary.sez.cess += cess;
+                } else if (inv.isDeemedExport) {
                     summary.deemedExports.records++;
-                    summary.deemedExports.value += totals.value;
-                    summary.deemedExports.igst += totals.igst;
-                    summary.deemedExports.cgst += totals.cgst;
-                    summary.deemedExports.sgst += totals.sgst;
-                    summary.deemedExports.cess += totals.cess;
+                    summary.deemedExports.value += val;
+                    summary.deemedExports.igst += igst;
+                    summary.deemedExports.cgst += cgst;
+                    summary.deemedExports.sgst += sgst;
+                    summary.deemedExports.cess += cess;
                 } else {
                     summary.b2b.records++;
-                    summary.b2b.value += totals.value;
-                    summary.b2b.igst += totals.igst;
-                    summary.b2b.cgst += totals.cgst;
-                    summary.b2b.sgst += totals.sgst;
-                    summary.b2b.cess += totals.cess;
+                    summary.b2b.value += val;
+                    summary.b2b.igst += igst;
+                    summary.b2b.cgst += cgst;
+                    summary.b2b.sgst += sgst;
+                    summary.b2b.cess += cess;
                 }
             });
+        } else {
+            const { data: b2bList } = await supabase.from('gstr1_b2b_invoices').select('*').eq('trn', trn);
+            if (b2bList) {
+                const sumItemDetails = (items) => {
+                    let totals = { value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 };
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            totals.value += parseFloat(item.taxableValue || item.taxable_value || item.grossAdvance || item.gross_advance_received || item.grossAdjustment || item.gross_advance_adjusted) || 0;
+                            totals.igst += parseFloat(item.integratedTax || item.integrated_tax || item.igst) || 0;
+                            totals.cgst += parseFloat(item.centralTax || item.central_tax || item.cgst) || 0;
+                            totals.sgst += parseFloat(item.stateTax || item.state_tax || item.sgst || item.state_ut_tax) || 0;
+                            totals.cess += parseFloat(item.cess) || 0;
+                        });
+                    }
+                    return totals;
+                };
+                b2bList.forEach(inv => {
+                    const totals = sumItemDetails(inv.tax_items);
+                    if (inv.is_reverse_charge) {
+                        summary.b2bReverse.records++;
+                        summary.b2bReverse.value += totals.value;
+                        summary.b2bReverse.igst += totals.igst;
+                        summary.b2bReverse.cgst += totals.cgst;
+                        summary.b2bReverse.sgst += totals.sgst;
+                        summary.b2bReverse.cess += totals.cess;
+                    } else if (inv.is_sez_with_payment || inv.is_sez_without_payment) {
+                        summary.sez.records++;
+                        summary.sez.value += totals.value;
+                        summary.sez.igst += totals.igst;
+                        summary.sez.cgst += totals.cgst;
+                        summary.sez.sgst += totals.sgst;
+                        summary.sez.cess += totals.cess;
+                    } else if (inv.is_deemed_export) {
+                        summary.deemedExports.records++;
+                        summary.deemedExports.value += totals.value;
+                        summary.deemedExports.igst += totals.igst;
+                        summary.deemedExports.cgst += totals.cgst;
+                        summary.deemedExports.sgst += totals.sgst;
+                        summary.deemedExports.cess += totals.cess;
+                    } else {
+                        summary.b2b.records++;
+                        summary.b2b.value += totals.value;
+                        summary.b2b.igst += totals.igst;
+                        summary.b2b.cgst += totals.cgst;
+                        summary.b2b.sgst += totals.sgst;
+                        summary.b2b.cess += totals.cess;
+                    }
+                });
+            }
         }
 
         // 2. B2CL Invoices
-        const { data: b2clList } = await supabase.from('gstr1_b2cl_invoices').select('*').eq('trn', trn);
-        if (b2clList) {
-            b2clList.forEach(inv => {
-                const totals = sumItemDetails(inv.item_details);
+        const b2clInvoices = getInvoicesList('GSTR1_B2CL_Invoices');
+        if (b2clInvoices.length > 0) {
+            b2clInvoices.forEach(inv => {
+                let val = 0, igst = 0, cess = 0;
+                if (Array.isArray(inv.itemDetails)) {
+                    inv.itemDetails.forEach(item => {
+                        val += parseFloat(item.taxableValue) || 0;
+                        igst += parseFloat(item.integratedTax) || 0;
+                        cess += parseFloat(item.cess) || 0;
+                    });
+                }
                 summary.b2cl.records++;
-                summary.b2cl.value += totals.value;
-                summary.b2cl.igst += totals.igst;
-                summary.b2cl.cess += totals.cess;
+                summary.b2cl.value += val;
+                summary.b2cl.igst += igst;
+                summary.b2cl.cess += cess;
             });
+        } else {
+            const { data: b2clList } = await supabase.from('gstr1_b2cl_invoices').select('*').eq('trn', trn);
+            if (b2clList) {
+                b2clList.forEach(inv => {
+                    let val = 0, igst = 0, cess = 0;
+                    if (Array.isArray(inv.item_details)) {
+                        inv.item_details.forEach(item => {
+                            val += parseFloat(item.taxableValue) || 0;
+                            igst += parseFloat(item.integratedTax) || 0;
+                            cess += parseFloat(item.cess) || 0;
+                        });
+                    }
+                    summary.b2cl.records++;
+                    summary.b2cl.value += val;
+                    summary.b2cl.igst += igst;
+                    summary.b2cl.cess += cess;
+                });
+            }
         }
 
-        // 3. Exports
-        const { data: expList } = await supabase.from('gstr1_exports_invoices').select('*').eq('trn', trn);
-        if (expList) {
-            expList.forEach(inv => {
-                const totals = sumItemDetails(inv.item_details);
+        // 3. Exports Invoices
+        const exportsInvoices = getInvoicesList('GSTR1_Exports_Invoices');
+        if (exportsInvoices.length > 0) {
+            exportsInvoices.forEach(inv => {
+                let val = 0, igst = 0, cess = 0;
+                if (Array.isArray(inv.itemDetails)) {
+                    inv.itemDetails.forEach(item => {
+                        val += parseFloat(item.taxableValue) || 0;
+                        igst += parseFloat(item.integratedTax) || 0;
+                        cess += parseFloat(item.cess) || 0;
+                    });
+                }
                 summary.exports.records++;
-                summary.exports.value += totals.value;
-                summary.exports.igst += totals.igst;
-                summary.exports.cess += totals.cess;
+                summary.exports.value += val;
+                summary.exports.igst += igst;
+                summary.exports.cess += cess;
             });
+        } else {
+            const { data: expList } = await supabase.from('gstr1_exports_invoices').select('*').eq('trn', trn);
+            if (expList) {
+                expList.forEach(inv => {
+                    let val = 0, igst = 0, cess = 0;
+                    if (Array.isArray(inv.item_details)) {
+                        inv.item_details.forEach(item => {
+                            val += parseFloat(item.taxableValue) || 0;
+                            igst += parseFloat(item.integratedTax) || 0;
+                            cess += parseFloat(item.cess) || 0;
+                        });
+                    }
+                    summary.exports.records++;
+                    summary.exports.value += val;
+                    summary.exports.igst += igst;
+                    summary.exports.cess += cess;
+                });
+            }
         }
 
-        // 4. B2CS
-        const { data: b2csList } = await supabase.from('gstr1_b2cs_invoices').select('*').eq('trn', trn);
-        if (b2csList) {
-            b2csList.forEach(inv => {
-                const value = parseFloat(inv.taxable_value) || 0;
+        // 4. B2CS Invoices
+        const b2csInvoices = getInvoicesList('GSTR1_B2CS_Invoices');
+        if (b2csInvoices.length > 0) {
+            b2csInvoices.forEach(inv => {
+                const val = parseFloat(inv.taxableValue) || 0;
                 const rate = parseFloat(inv.rate) || 0;
                 summary.b2cs.records++;
-                summary.b2cs.value += value;
-                if (inv.supply_type === 'Inter-State') {
-                    summary.b2cs.igst += (value * rate) / 100;
+                summary.b2cs.value += val;
+                if (inv.supplyType === 'Inter-State') {
+                    summary.b2cs.igst += (val * rate) / 100;
                 } else {
-                    summary.b2cs.cgst += (value * rate) / 200;
-                    summary.b2cs.sgst += (value * rate) / 200;
+                    summary.b2cs.cgst += (val * rate) / 200;
+                    summary.b2cs.sgst += (val * rate) / 200;
                 }
             });
+        } else {
+            const { data: b2csList } = await supabase.from('gstr1_b2cs_invoices').select('*').eq('trn', trn);
+            if (b2csList) {
+                b2csList.forEach(inv => {
+                    const value = parseFloat(inv.taxable_value) || 0;
+                    const rate = parseFloat(inv.rate) || 0;
+                    summary.b2cs.records++;
+                    summary.b2cs.value += value;
+                    if (inv.supply_type === 'Inter-State') {
+                        summary.b2cs.igst += (value * rate) / 100;
+                    } else {
+                        summary.b2cs.cgst += (value * rate) / 200;
+                        summary.b2cs.sgst += (value * rate) / 200;
+                    }
+                });
+            }
         }
 
-        // 5. Nil Rated
-        const { data: nilList } = await supabase.from('gstr1_nil_rated_supplies').select('*').eq('trn', trn);
-        if (nilList) {
-            nilList.forEach(inv => {
+        // 5. Nil Rated Supplies
+        const nilRatedInvoices = getInvoicesList('GSTR1_NilRated_Supplies');
+        if (nilRatedInvoices.length > 0) {
+            nilRatedInvoices.forEach(inv => {
                 summary.nilRated.records++;
-                summary.nilRated.value += parseFloat(inv.nil_rated_value) || 0;
-                summary.nilRated.exempted += parseFloat(inv.exempted_value) || 0;
-                summary.nilRated.nonGst += parseFloat(inv.non_gst_value) || 0;
+                summary.nilRated.value += parseFloat(inv.nilRated) || 0;
+                summary.nilRated.exempted += parseFloat(inv.exempted) || 0;
+                summary.nilRated.nonGst += parseFloat(inv.nonGst) || 0;
             });
+        } else {
+            const { data: nilList } = await supabase.from('gstr1_nil_rated_supplies').select('*').eq('trn', trn);
+            if (nilList) {
+                nilList.forEach(inv => {
+                    summary.nilRated.records++;
+                    summary.nilRated.value += parseFloat(inv.nil_rated_value) || 0;
+                    summary.nilRated.exempted += parseFloat(inv.exempted_value) || 0;
+                    summary.nilRated.nonGst += parseFloat(inv.non_gst_value) || 0;
+                });
+            }
         }
 
-        // 6. CDNR
-        const { data: cdnrList } = await supabase.from('gstr1_cdnr_invoices').select('*').eq('trn', trn);
-        if (cdnrList) {
-            cdnrList.forEach(inv => {
-                const totals = sumItemDetails(inv.tax_items || inv.itemDetails);
+        // 6. CDNR Invoices
+        const cdnrInvoices = getInvoicesList('GSTR1_CDNR_Invoices');
+        if (cdnrInvoices.length > 0) {
+            cdnrInvoices.forEach(inv => {
+                let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                const items = inv.itemDetails || inv.tax_items || [];
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        val += parseFloat(item.taxableValue) || 0;
+                        igst += parseFloat(item.integratedTax) || 0;
+                        cgst += parseFloat(item.centralTax) || 0;
+                        sgst += parseFloat(item.stateTax) || 0;
+                        cess += parseFloat(item.cess) || 0;
+                    });
+                }
                 summary.cdnr.records++;
-                summary.cdnr.value += totals.value || parseFloat(inv.note_value) || 0;
-                summary.cdnr.igst += totals.igst;
-                summary.cdnr.cgst += totals.cgst;
-                summary.cdnr.sgst += totals.sgst;
-                summary.cdnr.cess += totals.cess;
+                summary.cdnr.value += val || parseFloat(inv.noteValue) || 0;
+                summary.cdnr.igst += igst;
+                summary.cdnr.cgst += cgst;
+                summary.cdnr.sgst += sgst;
+                summary.cdnr.cess += cess;
             });
+        } else {
+            const { data: cdnrList } = await supabase.from('gstr1_cdnr_invoices').select('*').eq('trn', trn);
+            if (cdnrList) {
+                cdnrList.forEach(inv => {
+                    let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                    const items = inv.tax_items || inv.itemDetails || [];
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            val += parseFloat(item.taxableValue || item.taxable_value) || 0;
+                            igst += parseFloat(item.integratedTax || item.integrated_tax || item.igst) || 0;
+                            cgst += parseFloat(item.centralTax || item.central_tax || item.cgst) || 0;
+                            sgst += parseFloat(item.stateTax || item.state_tax || item.sgst || item.state_ut_tax) || 0;
+                            cess += parseFloat(item.cess) || 0;
+                        });
+                    }
+                    summary.cdnr.records++;
+                    summary.cdnr.value += val || parseFloat(inv.note_value) || 0;
+                    summary.cdnr.igst += igst;
+                    summary.cdnr.cgst += cgst;
+                    summary.cdnr.sgst += sgst;
+                    summary.cdnr.cess += cess;
+                });
+            }
         }
 
-        // 7. CDNUR
-        const { data: cdnurList } = await supabase.from('gstr1_cdnur_invoices').select('*').eq('trn', trn);
-        if (cdnurList) {
-            cdnurList.forEach(inv => {
-                const totals = sumItemDetails(inv.tax_details || inv.taxDetails);
+        // 7. CDNUR Invoices
+        const cdnurInvoices = getInvoicesList('GSTR1_CDNUR_Invoices');
+        if (cdnurInvoices.length > 0) {
+            cdnurInvoices.forEach(inv => {
+                let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                const items = inv.taxDetails || inv.tax_details || [];
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        val += parseFloat(item.taxableValue) || 0;
+                        igst += parseFloat(item.integratedTax) || 0;
+                        cgst += parseFloat(item.centralTax) || 0;
+                        sgst += parseFloat(item.stateTax) || 0;
+                        cess += parseFloat(item.cess) || 0;
+                    });
+                }
                 summary.cdnur.records++;
-                summary.cdnur.value += totals.value || parseFloat(inv.note_value) || 0;
-                summary.cdnur.igst += totals.igst;
-                summary.cdnur.cgst += totals.cgst;
-                summary.cdnur.sgst += totals.sgst;
-                summary.cdnur.cess += totals.cess;
+                summary.cdnur.value += val || parseFloat(inv.noteValue) || 0;
+                summary.cdnur.igst += igst;
+                summary.cdnur.cgst += cgst;
+                summary.cdnur.sgst += sgst;
+                summary.cdnur.cess += cess;
             });
+        } else {
+            const { data: cdnurList } = await supabase.from('gstr1_cdnur_invoices').select('*').eq('trn', trn);
+            if (cdnurList) {
+                cdnurList.forEach(inv => {
+                    let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                    const items = inv.tax_details || inv.taxDetails || [];
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            val += parseFloat(item.taxableValue || item.taxable_value) || 0;
+                            igst += parseFloat(item.integratedTax || item.integrated_tax || item.igst) || 0;
+                            cgst += parseFloat(item.centralTax || item.central_tax || item.cgst) || 0;
+                            sgst += parseFloat(item.stateTax || item.state_tax || item.sgst || item.state_ut_tax) || 0;
+                            cess += parseFloat(item.cess) || 0;
+                        });
+                    }
+                    summary.cdnur.records++;
+                    summary.cdnur.value += val || parseFloat(inv.note_value) || 0;
+                    summary.cdnur.igst += igst;
+                    summary.cdnur.cgst += cgst;
+                    summary.cdnur.sgst += sgst;
+                    summary.cdnur.cess += cess;
+                });
+            }
         }
 
         // 8. Adv Tax
-        const { data: advList } = await supabase.from('gstr1_adv_tax').select('*').eq('trn', trn);
-        if (advList) {
-            advList.forEach(inv => {
-                const totals = sumItemDetails(inv.item_details || inv.itemDetails);
+        const advTaxInvoices = getInvoicesList('GSTR1_AdvTax_Invoices');
+        if (advTaxInvoices.length > 0) {
+            advTaxInvoices.forEach(inv => {
+                let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                const items = inv.itemDetails || [];
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        val += parseFloat(item.grossAdvance) || 0;
+                        igst += parseFloat(item.integratedTax) || 0;
+                        cgst += parseFloat(item.centralTax) || 0;
+                        sgst += parseFloat(item.stateTax) || 0;
+                        cess += parseFloat(item.cess) || 0;
+                    });
+                }
                 summary.advTax.records++;
-                summary.advTax.value += totals.value || parseFloat(inv.gross_advance_received) || 0;
-                summary.advTax.igst += totals.igst;
-                summary.advTax.cgst += totals.cgst;
-                summary.advTax.sgst += totals.sgst;
-                summary.advTax.cess += totals.cess;
+                summary.advTax.value += val;
+                summary.advTax.igst += igst;
+                summary.advTax.cgst += cgst;
+                summary.advTax.sgst += sgst;
+                summary.advTax.cess += cess;
             });
+        } else {
+            const { data: advList } = await supabase.from('gstr1_adv_tax').select('*').eq('trn', trn);
+            if (advList) {
+                advList.forEach(inv => {
+                    let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                    const items = inv.item_details || inv.itemDetails || [];
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            val += parseFloat(item.gross_advance_received || item.grossAdvance) || 0;
+                            igst += parseFloat(item.integrated_tax || item.integratedTax || item.igst) || 0;
+                            cgst += parseFloat(item.central_tax || item.centralTax || item.cgst) || 0;
+                            sgst += parseFloat(item.state_tax || item.stateTax || item.sgst) || 0;
+                            cess += parseFloat(item.cess) || 0;
+                        });
+                    }
+                    summary.advTax.records++;
+                    summary.advTax.value += val;
+                    summary.advTax.igst += igst;
+                    summary.advTax.cgst += cgst;
+                    summary.advTax.sgst += sgst;
+                    summary.advTax.cess += cess;
+                });
+            }
         }
 
         // 9. Adj Advances
-        const { data: adjList } = await supabase.from('gstr1_adj_advances').select('*').eq('trn', trn);
-        if (adjList) {
-            adjList.forEach(inv => {
-                const totals = sumItemDetails(inv.item_details || inv.itemDetails);
+        const adjAdvancesInvoices = getInvoicesList('GSTR1_AdjAdvances_Invoices');
+        if (adjAdvancesInvoices.length > 0) {
+            adjAdvancesInvoices.forEach(inv => {
+                let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                const items = inv.itemDetails || [];
+                if (Array.isArray(items)) {
+                    items.forEach(item => {
+                        val += parseFloat(item.grossAdjustment) || 0;
+                        igst += parseFloat(item.integratedTax) || 0;
+                        cgst += parseFloat(item.centralTax) || 0;
+                        sgst += parseFloat(item.stateTax) || 0;
+                        cess += parseFloat(item.cess) || 0;
+                    });
+                }
                 summary.adjAdvances.records++;
-                summary.adjAdvances.value += totals.value || parseFloat(inv.gross_advance_adjusted) || 0;
-                summary.adjAdvances.igst += totals.igst;
-                summary.adjAdvances.cgst += totals.cgst;
-                summary.adjAdvances.sgst += totals.sgst;
-                summary.adjAdvances.cess += totals.cess;
+                summary.adjAdvances.value += val;
+                summary.adjAdvances.igst += igst;
+                summary.adjAdvances.cgst += cgst;
+                summary.adjAdvances.sgst += sgst;
+                summary.adjAdvances.cess += cess;
             });
+        } else {
+            const { data: adjList } = await supabase.from('gstr1_adj_advances').select('*').eq('trn', trn);
+            if (adjList) {
+                adjList.forEach(inv => {
+                    let val = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                    const items = inv.item_details || inv.itemDetails || [];
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            val += parseFloat(item.gross_advance_adjusted || item.grossAdjustment) || 0;
+                            igst += parseFloat(item.integrated_tax || item.integratedTax || item.igst) || 0;
+                            cgst += parseFloat(item.central_tax || item.centralTax || item.cgst) || 0;
+                            sgst += parseFloat(item.state_tax || item.stateTax || item.sgst) || 0;
+                            cess += parseFloat(item.cess) || 0;
+                        });
+                    }
+                    summary.adjAdvances.records++;
+                    summary.adjAdvances.value += val;
+                    summary.adjAdvances.igst += igst;
+                    summary.adjAdvances.cgst += cgst;
+                    summary.adjAdvances.sgst += sgst;
+                    summary.adjAdvances.cess += cess;
+                });
+            }
         }
 
         // 10. HSN Summary
-        const { data: hsnList } = await supabase.from('gstr1_hsn_summary').select('*').eq('trn', trn);
-        if (hsnList) {
-            hsnList.forEach(inv => {
+        const hsnB2B = getInvoicesList('GSTR1_HSN_B2B');
+        const hsnB2C = getInvoicesList('GSTR1_HSN_B2C');
+        const allHsn = [...hsnB2B, ...hsnB2C];
+        if (allHsn.length > 0) {
+            allHsn.forEach(inv => {
                 summary.hsn.records++;
-                summary.hsn.value += parseFloat(inv.total_taxable_value) || 0;
-                summary.hsn.igst += parseFloat(inv.integrated_tax) || 0;
-                summary.hsn.cgst += parseFloat(inv.central_tax) || 0;
-                summary.hsn.sgst += parseFloat(inv.state_tax) || 0;
+                summary.hsn.value += parseFloat(inv.totalTaxableValue) || 0;
+                summary.hsn.igst += parseFloat(inv.integratedTax) || 0;
+                summary.hsn.cgst += parseFloat(inv.centralTax) || 0;
+                summary.hsn.sgst += parseFloat(inv.stateTax) || 0;
                 summary.hsn.cess += parseFloat(inv.cess) || 0;
             });
+        } else {
+            const { data: hsnList } = await supabase.from('gstr1_hsn_summary').select('*').eq('trn', trn);
+            if (hsnList) {
+                hsnList.forEach(inv => {
+                    summary.hsn.records++;
+                    summary.hsn.value += parseFloat(inv.total_taxable_value) || 0;
+                    summary.hsn.igst += parseFloat(inv.integrated_tax) || 0;
+                    summary.hsn.cgst += parseFloat(inv.central_tax) || 0;
+                    summary.hsn.sgst += parseFloat(inv.state_tax) || 0;
+                    summary.hsn.cess += parseFloat(inv.cess) || 0;
+                });
+            }
         }
 
         // 11. Documents
-        const { data: docList } = await supabase.from('gstr1_docs_issued').select('*').eq('trn', trn);
-        if (docList) {
-            docList.forEach(inv => {
-                summary.docs.records += parseInt(inv.net_issued) || 0;
+        const docsList = getInvoicesList('GSTR1_Docs_Issued');
+        if (docsList.length > 0) {
+            docsList.forEach(inv => {
+                summary.docs.records += parseInt(inv.netIssued) || 0;
             });
+        } else {
+            const { data: docList } = await supabase.from('gstr1_docs_issued').select('*').eq('trn', trn);
+            if (docList) {
+                docList.forEach(inv => {
+                    summary.docs.records += parseInt(inv.net_issued) || 0;
+                });
+            }
         }
 
         // 12. ECO
-        const { data: ecoList } = await supabase.from('gstr1_eco_supplies').select('*').eq('trn', trn);
-        if (ecoList) {
-            ecoList.forEach(inv => {
+        const ecoTcs = getInvoicesList('GSTR1_ECO_TCS');
+        const ecoPay = getInvoicesList('GSTR1_ECO_PAY');
+        const allEco = [...ecoTcs, ...ecoPay];
+        if (allEco.length > 0) {
+            allEco.forEach(inv => {
                 summary.eco.records++;
-                summary.eco.value += parseFloat(inv.net_value) || 0;
-                summary.eco.igst += parseFloat(inv.integrated_tax) || 0;
-                summary.eco.cgst += parseFloat(inv.central_tax) || 0;
-                summary.eco.sgst += parseFloat(inv.state_tax) || 0;
+                summary.eco.value += parseFloat(inv.netValue) || 0;
+                summary.eco.igst += parseFloat(inv.integratedTax) || 0;
+                summary.eco.cgst += parseFloat(inv.centralTax) || 0;
+                summary.eco.sgst += parseFloat(inv.stateTax) || 0;
                 summary.eco.cess += parseFloat(inv.cess) || 0;
             });
+        } else {
+            const { data: ecoList } = await supabase.from('gstr1_eco_supplies').select('*').eq('trn', trn);
+            if (ecoList) {
+                ecoList.forEach(inv => {
+                    summary.eco.records++;
+                    summary.eco.value += parseFloat(inv.net_value) || 0;
+                    summary.eco.igst += parseFloat(inv.integrated_tax) || 0;
+                    summary.eco.cgst += parseFloat(inv.central_tax) || 0;
+                    summary.eco.sgst += parseFloat(inv.state_tax) || 0;
+                    summary.eco.cess += parseFloat(inv.cess) || 0;
+                });
+            }
         }
 
         // 13. Section 9(5)
-        const { data: sup95List } = await supabase.from('gstr1_sup95').select('*').eq('trn', trn);
-        if (sup95List) {
-            sup95List.forEach(inv => {
-                summary.sup95.records++;
-                summary.sup95.value += parseFloat(inv.taxable_value) || 0;
-                // IGST/CGST/SGST not directly in SUP95 table in this schema yet, 
-                // but we can calculate if needed.
-            });
+        const sup95Tabs = ['GSTR1_SUP95_R2R', 'GSTR1_SUP95_R2NR', 'GSTR1_SUP95_NR2R', 'GSTR1_SUP95_NR2NR'];
+        let hasLocalSup95 = false;
+        sup95Tabs.forEach(tab => {
+            const list = getInvoicesList(tab);
+            if (list.length > 0) {
+                hasLocalSup95 = true;
+                list.forEach(inv => {
+                    let val = parseFloat(inv.taxableValue) || 0;
+                    let igst = parseFloat(inv.integratedTax) || 0;
+                    let cgst = parseFloat(inv.centralTax) || 0;
+                    let sgst = parseFloat(inv.stateTax) || 0;
+                    let cess = parseFloat(inv.cess) || 0;
+
+                    if (Array.isArray(inv.itemDetails) && inv.itemDetails.length > 0) {
+                        let hasDetails = false;
+                        let itemVal = 0, itemIgst = 0, itemCgst = 0, itemSgst = 0, itemCess = 0;
+                        inv.itemDetails.forEach(item => {
+                            if (item.taxableValue) {
+                                hasDetails = true;
+                                itemVal += parseFloat(item.taxableValue) || 0;
+                                itemIgst += parseFloat(item.integratedTax) || 0;
+                                itemCgst += parseFloat(item.centralTax) || 0;
+                                itemSgst += parseFloat(item.stateTax) || 0;
+                                itemCess += parseFloat(item.cess) || 0;
+                            }
+                        });
+                        if (hasDetails) {
+                            val = itemVal;
+                            igst = itemIgst;
+                            cgst = itemCgst;
+                            sgst = itemSgst;
+                            cess = itemCess;
+                        }
+                    }
+                    summary.sup95.records++;
+                    summary.sup95.value += val;
+                    summary.sup95.igst += igst;
+                    summary.sup95.cgst += cgst;
+                    summary.sup95.sgst += sgst;
+                    summary.sup95.cess += cess;
+                });
+            }
+        });
+        if (!hasLocalSup95) {
+            const { data: sup95List } = await supabase.from('gstr1_sup95').select('*').eq('trn', trn);
+            if (sup95List) {
+                sup95List.forEach(inv => {
+                    summary.sup95.records++;
+                    summary.sup95.value += parseFloat(inv.taxable_value) || 0;
+                    summary.sup95.igst += parseFloat(inv.integrated_tax) || 0;
+                    summary.sup95.cgst += parseFloat(inv.central_tax) || 0;
+                    summary.sup95.sgst += parseFloat(inv.state_tax) || 0;
+                    summary.sup95.cess += parseFloat(inv.cess) || 0;
+                });
+            }
         }
 
         res.status(200).json({
             success: true,
-            data: summary
+            data: {
+                ...summary,
+                rawRecords: localDb[trn] || {}
+            }
         });
     } catch (err) {
         console.error('Summary Error:', err.message);
         res.status(500).json({ success: false, message: err.message });
     }
 };
+
+// @route   GET /api/forms/gstr1-profile/:trn
+exports.getTaxpayerProfile = async (req, res) => {
+    try {
+        const { trn } = req.params;
+        const localDb = readLocalDb();
+
+        // 1. Attempt to fetch from business_details table in Supabase
+        let bizData = null;
+        try {
+            const { data } = await supabase
+                .from('business_details')
+                .select('*')
+                .eq('trn', trn)
+                .single();
+            if (data) bizData = data;
+        } catch (e) {
+            console.warn('Could not query business_details from Supabase:', e.message);
+        }
+
+        // 2. Try to fetch from users table in Supabase
+        let userData = null;
+        try {
+            const { data } = await supabase
+                .from('users')
+                .select('*')
+                .eq('trn', trn)
+                .single();
+            if (data) userData = data;
+        } catch (e) {
+            console.warn('Could not query users from Supabase:', e.message);
+        }
+
+        // 3. Fallback to local_db.json
+        const localTrnData = localDb[trn] || {};
+        
+        // Derive final taxpayer details
+        const legalName = bizData?.legal_name || userData?.legal_name || localTrnData?.Registration?.legalName || 'D MIX MEDIA PRIVATE LIMITED';
+        const tradeName = bizData?.trade_name || localTrnData?.BusinessDetails?.tradeName || '';
+        const pan = bizData?.pan || userData?.pan || localTrnData?.Registration?.pan || 'AAICD8127A';
+        const stateName = bizData?.state_name || userData?.state || localTrnData?.Registration?.state || 'Kerala';
+
+        // State Codes Map
+        const stateCodes = {
+            'Jammu and Kashmir': '01', 'Himachal Pradesh': '02', 'Punjab': '03', 'Chandigarh': '04',
+            'Uttarakhand': '05', 'Haryana': '06', 'Delhi': '07', 'Rajasthan': '08', 'Uttar Pradesh': '09',
+            'Bihar': '10', 'Sikkim': '11', 'Arunachal Pradesh': '12', 'Nagaland': '13', 'Manipur': '14',
+            'Mizoram': '15', 'Tripura': '16', 'Meghalaya': '17', 'Assam': '18', 'West Bengal': '19',
+            'Jharkhand': '20', 'Odisha': '21', 'Chhattisgarh': '22', 'Madhya Pradesh': '23',
+            'Gujarat': '24', 'Daman and Diu': '25', 'Dadra and Nagar Haveli': '26', 'Maharashtra': '27',
+            'Andhra Pradesh': '28', 'Karnataka': '29', 'Goa': '30', 'Lakshadweep': '31', 'Kerala': '32',
+            'Tamil Nadu': '33', 'Puducherry': '34', 'Andaman and Nicobar Islands': '35', 'Telangana': '36',
+            'Andhra Pradesh (New)': '37', 'Ladakh': '38'
+        };
+
+        const stateCode = stateCodes[stateName] || '32';
+        const gstin = stateCode + pan + '1Z4';
+
+        // Format Date to DD/MM/YYYY
+        const formatDate = (d) => {
+            if (!d) return '';
+            const date = new Date(d);
+            if (isNaN(date.getTime())) return d;
+            const dd = String(date.getDate()).padStart(2, '0');
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const yyyy = date.getFullYear();
+            return `${dd}/${mm}/${yyyy}`;
+        };
+
+        // ARN and ARN Date
+        const today = new Date();
+        const year = today.getFullYear().toString().slice(-2);
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const arn = `AA${stateCode}${month}${year}1234567`;
+        
+        let rawArnDate = bizData?.commencement_date || localTrnData?.BusinessDetails?.commencementDate || '2026-03-15';
+        const arnDate = formatDate(rawArnDate);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                gstin,
+                legalName,
+                tradeName,
+                arn,
+                arnDate,
+                pan,
+                stateName,
+                stateCode
+            }
+        });
+    } catch (err) {
+        console.error('getTaxpayerProfile error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
+// @desc    Get GSTR-2B return summary data
+// @route   GET /api/forms/gstr2b-summary/:trn
+exports.getGSTR2BSummary = async (req, res) => {
+    try {
+        const { trn } = req.params;
+        const localDb = readLocalDb();
+
+        const summary = {
+            itcAvailable: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, recordsList: [] },
+            itcNotAvailable: { records: 0, value: 0, taxAmount: 0, recordsList: [] },
+            debitNotes: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, recordsList: [] },
+            creditNotes: { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, recordsList: [] },
+            importGoods: { records: 0, value: 0, igst: 0, recordsList: [] },
+            importServices: { records: 0, value: 0, igst: 0, recordsList: [] }
+        };
+
+        const getRecordsList = (tabName) => {
+            const tabData = localDb[trn]?.[tabName];
+            if (!tabData) return [];
+            if (Array.isArray(tabData.records)) return tabData.records;
+            if (Array.isArray(tabData.invoices)) return tabData.invoices;
+            if (Array.isArray(tabData)) return tabData;
+            return [];
+        };
+
+        // 1. ITC Available
+        const itcAvail = getRecordsList('GSTR2B_ITC_Available');
+        summary.itcAvailable.recordsList = itcAvail;
+        itcAvail.forEach(r => {
+            summary.itcAvailable.records++;
+            summary.itcAvailable.value += parseFloat(r.taxableValue) || 0;
+            summary.itcAvailable.igst += parseFloat(r.igst) || 0;
+            summary.itcAvailable.cgst += parseFloat(r.cgst) || 0;
+            summary.itcAvailable.sgst += parseFloat(r.sgst) || 0;
+            summary.itcAvailable.cess += parseFloat(r.cess) || 0;
+        });
+
+        // 2. ITC Not Available
+        const itcNotAvail = getRecordsList('GSTR2B_ITC_Not_Available');
+        summary.itcNotAvailable.recordsList = itcNotAvail;
+        itcNotAvail.forEach(r => {
+            summary.itcNotAvailable.records++;
+            summary.itcNotAvailable.value += parseFloat(r.taxableValue) || 0;
+            summary.itcNotAvailable.taxAmount += parseFloat(r.taxAmount) || 0;
+        });
+
+        // 3. Debit Notes
+        const debNotes = getRecordsList('GSTR2B_Debit_Notes');
+        summary.debitNotes.recordsList = debNotes;
+        debNotes.forEach(r => {
+            summary.debitNotes.records++;
+            summary.debitNotes.value += parseFloat(r.taxableValue) || 0;
+            summary.debitNotes.igst += parseFloat(r.igst) || 0;
+            summary.debitNotes.cgst += parseFloat(r.cgst) || 0;
+            summary.debitNotes.sgst += parseFloat(r.sgst) || 0;
+            summary.debitNotes.cess += parseFloat(r.cess) || 0;
+        });
+
+        // 4. Credit Notes
+        const credNotes = getRecordsList('GSTR2B_Credit_Notes');
+        summary.creditNotes.recordsList = credNotes;
+        credNotes.forEach(r => {
+            summary.creditNotes.records++;
+            summary.creditNotes.value += parseFloat(r.taxableValue) || 0;
+            summary.creditNotes.igst += parseFloat(r.igst) || 0;
+            summary.creditNotes.cgst += parseFloat(r.cgst) || 0;
+            summary.creditNotes.sgst += parseFloat(r.sgst) || 0;
+            summary.creditNotes.cess += parseFloat(r.cess) || 0;
+        });
+
+        // 5. Import Goods
+        const impGoods = getRecordsList('GSTR2B_Import_Goods');
+        summary.importGoods.recordsList = impGoods;
+        impGoods.forEach(r => {
+            summary.importGoods.records++;
+            summary.importGoods.value += parseFloat(r.taxableValue) || 0;
+            summary.importGoods.igst += parseFloat(r.igst) || 0;
+        });
+
+        // 6. Import Services
+        const impServ = getRecordsList('GSTR2B_Import_Services');
+        summary.importServices.recordsList = impServ;
+        impServ.forEach(r => {
+            summary.importServices.records++;
+            summary.importServices.value += parseFloat(r.taxableValue) || 0;
+            summary.importServices.igst += parseFloat(r.igst) || 0;
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                ...summary,
+                rawRecords: localDb[trn] || {}
+            }
+        });
+    } catch (err) {
+        console.error('GSTR-2B Summary Error:', err.message);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+

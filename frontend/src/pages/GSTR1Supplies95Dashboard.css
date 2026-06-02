@@ -228,3 +228,82 @@
         margin: 10px;
     }
 }
+
+/* Custom Select Dropdown for GST portal simulation */
+.gst-custom-select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.gst-custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background-color: #fff;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #333;
+    user-select: none;
+    height: 38px;
+    box-sizing: border-box;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.gst-custom-select-trigger.open,
+.gst-custom-select-trigger:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.gst-custom-select-arrow {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #6c757d;
+    margin-left: 8px;
+    transition: transform 0.2s ease;
+}
+
+.gst-custom-select-trigger.open .gst-custom-select-arrow {
+    transform: rotate(180deg);
+}
+
+/* Force options to show downwards */
+.gst-custom-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    margin-top: 4px;
+    max-height: 250px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.gst-custom-select-option {
+    padding: 8px 12px;
+    font-size: 13.5px;
+    color: #333;
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.1s ease;
+}
+
+.gst-custom-select-option:hover {
+    background-color: #f1f3f6;
+}
+
+/* Active option matches the dark blue highlight of the portal */
+.gst-custom-select-option.selected {
+    background-color: #1a5cbb;
+    color: #fff;
+}
