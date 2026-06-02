@@ -109,6 +109,7 @@ const Layout = ({ children }) => {
                                         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
                                             <li style={{ borderBottom: '1px solid #eee' }}>
                                                 <button
+                                                    onClick={() => { setShowProfileMenu(false); navigate('/my-profile'); }}
                                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 15px', cursor: 'pointer', fontSize: '13px', color: '#1a237e', fontWeight: '500' }}
                                                 >
                                                     <span>👤</span> My Profile

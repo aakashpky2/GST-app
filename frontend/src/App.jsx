@@ -50,6 +50,7 @@ import AnnualReturn from './pages/AnnualReturn';
 import GSTR9Questionnaire from './pages/GSTR9Questionnaire';
 import Logout from './pages/Logout';
 import ChangePassword from './pages/ChangePassword';
+import MyProfile from './pages/MyProfile';
 import ReasonForChallan from './pages/ReasonForChallan';
 
 // GSTR-2B Modules
@@ -79,6 +80,7 @@ function App() {
           <Route path="/new-login" element={<NewUserLogin />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/returns-dashboard" element={<ReturnsDashboard />} />
+          <Route path="/my-profile" element={<MyProfile />} />
           <Route path="/returns/gstr1" element={<GSTR1Dashboard />} />
           
           {/* GSTR-2B Return Routes */}

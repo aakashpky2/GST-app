@@ -1,5 +1,5 @@
 const express = require('express');
-const { login, getMe, forgotPassword, changePassword, checkUsername, generateForgotOtp, verifyForgotOtp, resetPassword } = require('../controllers/auth');
+const { login, getMe, forgotPassword, changePassword, checkUsername, generateForgotOtp, verifyForgotOtp, resetPassword, getProfile } = require('../controllers/auth');
 
 const router = express.Router();
 
@@ -12,6 +12,7 @@ router.post('/generate-forgot-otp', generateForgotOtp);
 router.post('/verify-forgot-otp', verifyForgotOtp);
 router.post('/reset-password', resetPassword);
 router.post('/change-password', changePassword);
+router.post('/profile', getProfile);
 router.get('/me', protect, getMe);
 router.get('/trn-details/:trn', async (req, res, next) => {
     try {

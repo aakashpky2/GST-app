@@ -154,7 +154,7 @@ const Dashboard = () => {
                             <div className="profile-name">{localStorage.getItem('gst_legal_name') || 'GST Registrant'}</div>
                             <div className="profile-gstin">{localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GSTIN/TRN'}</div>
 
-                            <Link to="#" className="view-profile-link">View Profile <span>▶</span></Link>
+                            <Link to="/my-profile" className="view-profile-link">View Profile <span>▶</span></Link>
                         </div>
 
                         {/* Quick Links */}
