@@ -2,14 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1Dashboard.css'; // Reusing info block and basic styles
-import './GSTR1B2CLDashboard.css'; // Specific styles for this page
 import api from '../api/axios';
+import PageLoader from '../components/PageLoader';
 
 const GSTR1B2CLDashboard = () => {
     const navigate = useNavigate();
     const [activeMenu, setActiveMenu] = useState(null);
     const [invoices, setInvoices] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
+
+    const handleRefresh = () => {
+        setLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
 
     useEffect(() => {
         const fetchInvoices = async () => {
@@ -27,7 +35,7 @@ const GSTR1B2CLDashboard = () => {
             } catch (error) {
                 console.error("Failed to fetch B2CL invoices");
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
         fetchInvoices();
@@ -38,6 +46,8 @@ const GSTR1B2CLDashboard = () => {
     };
 
     return (
+        <>
+        <PageLoader loading={loading} />
         <div className="dashboard-container" onClick={handleBackdropClick} style={{ backgroundColor: '#f1f3f6' }}>
             {/* Breadcrumb Bar */}
             <div className="dashboard-breadcrumb-bar">
@@ -63,13 +73,13 @@ const GSTR1B2CLDashboard = () => {
                         <h2 className="b2cl-title">5 - B2C (Large) Invoices</h2>
                         <div className="gstr1-header-actions">
                             <button className="gstr1-btn-secondary">HELP <span style={{ fontSize: '12px', border: '1px solid #fff', borderRadius: '50%', padding: '0 4px', marginLeft: '4px' }}>?</span></button>
-                            <button className="gstr1-btn-icon">↻</button>
+                            <button className="gstr1-btn-icon" onClick={handleRefresh}>↻</button>
                         </div>
                     </div>
                 </div>
 
                 {/* Dynamic Records Box */}
-                {isLoading ? (
+                {loading ? (
                     <div className="b2cl-empty-records" style={{ textAlign: 'center' }}>Loading...</div>
                 ) : invoices.length === 0 ? (
                     <div className="b2cl-empty-records">
@@ -128,6 +138,7 @@ const GSTR1B2CLDashboard = () => {
                 Site best viewed at 1024 x 768 resolution in Microsoft Edge, Google Chrome 49+, Firefox 45+ and Safari 6+
             </div>
         </div>
+        </>
     );
 };
 

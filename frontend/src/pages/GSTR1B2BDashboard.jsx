@@ -5,12 +5,21 @@ import './GSTR1Dashboard.css'; // Reusing info block and basic styles
 import './GSTR1B2BDashboard.css'; // Specific styles for this page
 import api from '../api/axios';
 import { Toaster } from 'react-hot-toast';
+import PageLoader from '../components/PageLoader';
 
 const GSTR1B2BDashboard = () => {
     const navigate = useNavigate();
     const [activeMenu, setActiveMenu] = useState(null);
     const [invoices, setInvoices] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
+
+    const handleRefresh = () => {
+        setLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
 
     useEffect(() => {
         const fetchInvoices = async () => {
@@ -28,7 +37,7 @@ const GSTR1B2BDashboard = () => {
             } catch (error) {
                 console.error("Failed to fetch invoices");
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
         fetchInvoices();
@@ -39,6 +48,8 @@ const GSTR1B2BDashboard = () => {
     };
 
     return (
+        <>
+        <PageLoader loading={loading} />
         <div className="dashboard-container" onClick={handleBackdropClick} style={{ backgroundColor: '#f1f3f6' }}>
             <Toaster position="top-right" />
             {/* Breadcrumb Bar */}
@@ -81,7 +92,7 @@ const GSTR1B2BDashboard = () => {
                         <h2 className="b2b-title">4A, 4B, 6B, 6C - B2B, SEZ, DE Invoices</h2>
                         <div className="gstr1-header-actions">
                             <button className="gstr1-btn-secondary">HELP <span style={{ fontSize: '12px', border: '1px solid #fff', borderRadius: '50%', padding: '0 4px', marginLeft: '4px' }}>?</span></button>
-                            <button className="gstr1-btn-icon">↻</button>
+                            <button className="gstr1-btn-icon" onClick={handleRefresh}>↻</button>
                         </div>
                     </div>
 
@@ -91,7 +102,7 @@ const GSTR1B2BDashboard = () => {
                 </div>
 
                 {/* Dynamic Records Box */}
-                {isLoading ? (
+                {loading ? (
                     <div className="b2b-empty-records" style={{ textAlign: 'center' }}>Loading...</div>
                 ) : invoices.length === 0 ? (
                     <div className="b2b-empty-records">
@@ -150,6 +161,7 @@ const GSTR1B2BDashboard = () => {
                 Site best viewed at 1024 x 768 resolution in Microsoft Edge, Google Chrome 49+, Firefox 45+ and Safari 6+
             </div>
         </div>
+        </>
     );
 };
 

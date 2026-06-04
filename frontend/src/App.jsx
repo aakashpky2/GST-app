@@ -60,6 +60,18 @@ import GSTR2BSummary from './pages/GSTR2BSummary';
 import GSTR2BPrintPreview from './pages/GSTR2BPrintPreview';
 import GSTR2BB2BDetails from './pages/GSTR2BB2BDetails';
 
+// GSTR-1 Amendment Modules
+import GSTR1B2BAmendmentSummary from './pages/GSTR1B2BAmendmentSummary';
+import GSTR1B2CLAmendmentSummary from './pages/GSTR1B2CLAmendmentSummary';
+import GSTR1ExportAmendmentSummary from './pages/GSTR1ExportAmendmentSummary';
+import GSTR1CDNRAmendmentSummary from './pages/GSTR1CDNRAmendmentSummary';
+import GSTR1CDNURAmendmentSummary from './pages/GSTR1CDNURAmendmentSummary';
+import GSTR1B2CSAmendmentSummary from './pages/GSTR1B2CSAmendmentSummary';
+import GSTR1AdvTaxAmendmentSummary from './pages/GSTR1AdvTaxAmendmentSummary';
+import GSTR1AdjAdvancesAmendmentSummary from './pages/GSTR1AdjAdvancesAmendmentSummary';
+import GSTR1ECOAmendmentSummary from './pages/GSTR1ECOAmendmentSummary';
+import GSTR1Supplies15AAmendmentSummary from './pages/GSTR1Supplies15AAmendmentSummary';
+
 // Placeholders for GSTR-3B and IMS
 import GSTR3BPlaceholder from './pages/GSTR3BPlaceholder';
 import IMSPlaceholder from './pages/IMSPlaceholder';
@@ -100,28 +112,42 @@ function App() {
           <Route path="/returns/gstr1/pdf-preview" element={<GSTR1PrintPreview />} />
           <Route path="/returns/gstr1/b2b" element={<GSTR1B2BDashboard />} />
           <Route path="/returns/gstr1/b2b/add" element={<GSTR1B2BAddInvoice />} />
+          <Route path="/returns/auth/gstr1/b2b/amendment/summary" element={<GSTR1B2BAmendmentSummary />} />
           <Route path="/returns/gstr1/b2cl" element={<GSTR1B2CLDashboard />} />
           <Route path="/returns/gstr1/b2cl/add" element={<GSTR1B2CLAddInvoice />} />
+          <Route path="/returns/auth/gstr1/b2cl/amendment/summary" element={<GSTR1B2CLAmendmentSummary />} />
           <Route path="/returns/gstr1/exports" element={<GSTR1ExportsDashboard />} />
           <Route path="/returns/gstr1/exports/add" element={<GSTR1ExportsAddInvoice />} />
+          <Route path="/returns/auth/gstr1/export/amendment/summary" element={<GSTR1ExportAmendmentSummary />} />
           <Route path="/returns/gstr1/b2cs" element={<GSTR1B2CSDashboard />} />
           <Route path="/returns/gstr1/b2cs/add" element={<GSTR1B2CSAddInvoice />} />
+          <Route path="/returns/auth/gstr1/b2cs/amendment/summary" element={<GSTR1B2CSAmendmentSummary />} />
           <Route path="/returns/gstr1/nilrated" element={<GSTR1NilRatedDashboard />} />
           <Route path="/returns/gstr1/nilrated/add" element={<GSTR1NilRatedAddInvoice />} />
           <Route path="/returns/gstr1/cdnr" element={<GSTR1CDNRDashboard />} />
           <Route path="/returns/gstr1/cdnr/add" element={<GSTR1CDNRAddInvoice />} />
+          <Route path="/returns/auth/gstr1/cdn/registered/amendment/summary" element={<GSTR1CDNRAmendmentSummary />} />
           <Route path="/returns/gstr1/cdnur" element={<GSTR1CDNURDashboard />} />
           <Route path="/returns/gstr1/cdnur/add" element={<GSTR1CDNURAddInvoice />} />
+          <Route path="/returns/auth/gstr1/cdn/unregistered/amendment/summary" element={<GSTR1CDNURAmendmentSummary />} />
           <Route path="/returns/gstr1/advtax" element={<GSTR1AdvTaxDashboard />} />
           <Route path="/returns/gstr1/advtax/add" element={<GSTR1AdvTaxAddDetails />} />
+          <Route path="/returns/auth/gstr1/advtax/amendment/summary" element={<GSTR1AdvTaxAmendmentSummary />} />
           <Route path="/returns/gstr1/adjadvances" element={<GSTR1AdjAdvancesDashboard />} />
           <Route path="/returns/gstr1/adjadvances/add" element={<GSTR1AdjAdvancesAddDetails />} />
+          <Route path="/returns/auth/gstr1/txpd/amendment/summary" element={<GSTR1AdjAdvancesAmendmentSummary />} />
           <Route path="/returns/gstr1/hsn" element={<GSTR1HSNSummary />} />
           <Route path="/returns/gstr1/documents" element={<GSTR1DocumentsIssued />} />
           <Route path="/returns/gstr1/eco" element={<GSTR1ECOSupplies />} />
           <Route path="/returns/gstr1/eco/add" element={<GSTR1ECOAddRecord />} />
+          <Route path="/returns/auth/gstr1/ecomaopt/amendment/summary" element={<GSTR1ECOAmendmentSummary />} />
+          <Route path="/returns/auth/gstr1/ecomaopt/lipaysum" element={<GSTR1ECOAmendmentSummary />} />
           <Route path="/returns/gstr1/sup95" element={<GSTR1Supplies95Dashboard />} />
           <Route path="/returns/gstr1/sup95/add" element={<GSTR1Supplies95AddDetails />} />
+          <Route path="/returns/auth/gstr1/sup15a/summary" element={<GSTR1Supplies15AAmendmentSummary />} />
+          <Route path="/returns/auth/gstr1/sup15a/b2ca_sum" element={<GSTR1Supplies15AAmendmentSummary />} />
+          <Route path="/returns/auth/gstr1/sup15a/c2ba_sum" element={<GSTR1Supplies15AAmendmentSummary />} />
+          <Route path="/returns/auth/gstr1/sup15a/c2ca_sum" element={<GSTR1Supplies15AAmendmentSummary />} />
           <Route path="/business-details" element={<BusinessDetails />} />
 
           <Route path="/promoter-partners" element={<PromoterPartners />} />

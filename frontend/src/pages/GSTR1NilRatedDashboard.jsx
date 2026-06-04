@@ -2,14 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1Dashboard.css'; // Reusing info block and basic styles
-import './GSTR1NilRatedDashboard.css'; // Specific styles for this page
 import api from '../api/axios';
+import PageLoader from '../components/PageLoader';
 
 const GSTR1NilRatedDashboard = () => {
     const navigate = useNavigate();
     const [activeMenu, setActiveMenu] = useState(null);
     const [invoices, setInvoices] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [loading, setLoading] = useState(true);
+
+    const handleRefresh = () => {
+        setLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
 
     useEffect(() => {
         const fetchInvoices = async () => {
@@ -24,7 +32,7 @@ const GSTR1NilRatedDashboard = () => {
             } catch (error) {
                 console.error("Failed to fetch Nil Rated supplies");
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
         fetchInvoices();
@@ -35,6 +43,8 @@ const GSTR1NilRatedDashboard = () => {
     };
 
     return (
+        <>
+        <PageLoader loading={loading} />
         <div className="dashboard-container" onClick={handleBackdropClick} style={{ backgroundColor: '#f1f3f6' }}>
             {/* Breadcrumb Bar */}
             <div className="dashboard-breadcrumb-bar">
@@ -60,13 +70,13 @@ const GSTR1NilRatedDashboard = () => {
                         <h2 className="nilrated-title">8A, 8B, 8C, 8D - Nil Rated Supplies</h2>
                         <div className="gstr1-header-actions">
                             <button className="gstr1-btn-secondary">HELP <span style={{ fontSize: '12px', border: '1px solid #fff', borderRadius: '50%', padding: '0 4px', marginLeft: '4px' }}>?</span></button>
-                            <button className="gstr1-btn-icon">↻</button>
+                            <button className="gstr1-btn-icon" onClick={handleRefresh}>↻</button>
                         </div>
                     </div>
                 </div>
 
                 {/* Dynamic Records Box */}
-                {isLoading ? (
+                {loading ? (
                     <div className="nilrated-empty-records" style={{ textAlign: 'center' }}>Loading...</div>
                 ) : invoices.length === 0 ? (
                     <div className="nilrated-empty-records">
@@ -117,6 +127,7 @@ const GSTR1NilRatedDashboard = () => {
                 Site best viewed at 1024 x 768 resolution in Microsoft Edge, Google Chrome 49+, Firefox 45+ and Safari 6+
             </div>
         </div>
+        </>
     );
 };
 

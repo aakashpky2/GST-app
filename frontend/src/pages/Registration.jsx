@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import toast, { Toaster } from 'react-hot-toast';
+import PageLoader from '../components/PageLoader';
 
 const Registration = () => {
     const navigate = useNavigate();
@@ -330,6 +331,8 @@ const Registration = () => {
     const isNonResidentOnline = userType === 'Non-Resident Online Services Provider and/or Non-Resident Online Money Gaming Supplier';
 
     return (
+        <>
+        <PageLoader loading={loading} />
         <div className="registration-container">
             <div className="registration-card">
                 <Toaster position="top-right" />
@@ -623,6 +626,7 @@ const Registration = () => {
                 <span className="top-text">Top</span>
             </button>
         </div>
+        </>
     );
 };
 

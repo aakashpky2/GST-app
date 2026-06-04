@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; 
 import './GSTR1Dashboard.css';
 import './GSTR1Summary.css';
-import api from '../api/axios';
 import toast from 'react-hot-toast';
+import PageLoader from '../components/PageLoader';
 
 const GSTR1Summary = () => {
     const navigate = useNavigate();
@@ -36,9 +36,13 @@ const GSTR1Summary = () => {
         return parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
-    if (loading) {
-        return <div style={{ padding: '50px', textAlign: 'center' }}>Loading Summary...</div>;
-    }
+    const handleRefresh = () => {
+        setLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
 
     const s = summaryData || {};
 
@@ -288,6 +292,8 @@ const GSTR1Summary = () => {
     };
 
     return (
+        <>
+        <PageLoader loading={loading} />
         <div className="dashboard-container" style={{ backgroundColor: '#f1f3f6' }}>
             {/* Breadcrumb Bar */}
             <div className="dashboard-breadcrumb-bar">
@@ -302,7 +308,7 @@ const GSTR1Summary = () => {
                 </div>
                 <div className="breadcrumb-right">
                     <span>🌐 English</span>
-                    <button className="gstr1-btn-icon" style={{ marginLeft: '10px' }}>↻</button>
+                    <button className="gstr1-btn-icon" style={{ marginLeft: '10px' }} onClick={handleRefresh}>↻</button>
                 </div>
             </div>
 
@@ -728,6 +734,7 @@ const GSTR1Summary = () => {
                 Site best viewed at 1024 x 768 resolution in Microsoft Edge, Google Chrome 49+, Firefox 45+ and Safari 6+
             </div>
         </div>
+        </>
     );
 };
 

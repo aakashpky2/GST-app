@@ -5,6 +5,7 @@ import './GSTR1Dashboard.css';
 import './GSTR2BDashboard.css';
 import api from '../api/axios';
 import toast, { Toaster } from 'react-hot-toast';
+import PageLoader from '../components/PageLoader';
 
 const GSTR2BDashboard = () => {
     const navigate = useNavigate();
@@ -60,9 +61,13 @@ const GSTR2BDashboard = () => {
         setActiveMenu(null);
     };
 
-    if (loading) {
-        return <div style={{ padding: '100px 50px', textAlign: 'center', fontSize: '18px', fontWeight: 600 }}>Loading GSTR-2B Return Workspace...</div>;
-    }
+    const handleRefresh = () => {
+        setLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
 
     const s = summary || {};
     const itcAvail = s.itcAvailable || { records: 0, value: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 };
@@ -99,6 +104,8 @@ const GSTR2BDashboard = () => {
     ];
 
     return (
+        <>
+        <PageLoader loading={loading} />
         <div className="dashboard-container" onClick={handleBackdropClick} style={{ backgroundColor: '#f1f3f6' }}>
             <Toaster position="top-right" />
             
@@ -125,7 +132,7 @@ const GSTR2BDashboard = () => {
                     <div className="gstr1-header-actions">
                         <button className="gstr1-btn-secondary" style={{ backgroundColor: '#3b5f8f' }}>ITC ADVISORY</button>
                         <button className="gstr1-btn-secondary" style={{ backgroundColor: '#3b5f8f' }}>HELP ?</button>
-                        <button className="gstr1-btn-icon" style={{ backgroundColor: '#3b5f8f' }}>↻</button>
+                        <button className="gstr1-btn-icon" style={{ backgroundColor: '#3b5f8f' }} onClick={handleRefresh}>↻</button>
                     </div>
                 </div>
 
@@ -252,6 +259,7 @@ const GSTR2BDashboard = () => {
                 <div className="footer-right">Designed & Developed by GSTN</div>
             </footer>
         </div>
+        </>
     );
 };
 

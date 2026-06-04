@@ -2,12 +2,24 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1Dashboard.css';
+import PageLoader from '../components/PageLoader';
 
 const GSTR9Questionnaire = () => {
     const navigate = useNavigate();
     const [isNil, setIsNil] = useState('No');
+    const [loading, setLoading] = useState(false);
+
+    const handleRefresh = () => {
+        setLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
 
     return (
+        <>
+        <PageLoader loading={loading} />
         <div className="dashboard-container" style={{ backgroundColor: '#f1f3f6', minHeight: '100vh' }}>
             {/* Breadcrumb Bar */}
             <div className="dashboard-breadcrumb-bar">
@@ -27,7 +39,7 @@ const GSTR9Questionnaire = () => {
                 {/* Header Banner */}
                 <div className="gstr1-header-banner" style={{ background: '#26a69a', padding: '10px 20px', borderRadius: '4px 4px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h2 style={{ color: 'white', margin: 0, fontSize: '18px', fontWeight: '500' }}>GSTR-9 Annual return for Normal taxpayers</h2>
-                    <span style={{ color: 'white', cursor: 'pointer' }}>↻</span>
+                    <span style={{ color: 'white', cursor: 'pointer' }} onClick={handleRefresh}>↻</span>
                 </div>
 
                 {/* Info Block */}
@@ -126,6 +138,7 @@ const GSTR9Questionnaire = () => {
                 <p>Top</p>
             </div>
         </div>
+        </>
     );
 };
 
