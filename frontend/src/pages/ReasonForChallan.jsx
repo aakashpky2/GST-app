@@ -1,15 +1,85 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import toast from 'react-hot-toast';
+import api from '../api/axios';
 import './Dashboard.css';
 import './ReasonForChallan.css';
 
 const ReasonForChallan = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [reason, setReason] = useState(''); // 'monthly' or 'any'
     const [finYear, setFinYear] = useState('2025-26');
     const [period, setPeriod] = useState('February');
     const [challanType, setChallanType] = useState(''); // '35' or 'self'
     const [showLedger, setShowLedger] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
+    
+    const [isNavigatingBack, setIsNavigatingBack] = useState(false);
+    
+    const [user, setUser] = useState(null);
+    const [ledgerBalance, setLedgerBalance] = useState(null);
+    const [loadingLedger, setLoadingLedger] = useState(false);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const { data } = await api.get('/auth/me');
+                if (data?.success && data?.data) {
+                    setUser(data.data);
+                }
+            } catch (err) {
+                console.warn('Failed to fetch user data', err);
+            }
+        };
+        fetchUserData();
+    }, []);
+
+    const fetchLedgerBalance = async () => {
+        try {
+            setLoadingLedger(true);
+            const { data } = await api.get('/payments/ledger-balance');
+            if (data?.success && data?.data) {
+                setLedgerBalance(data.data);
+            }
+        } catch (err) {
+            toast.error('Failed to fetch ledger balance.');
+            console.error(err);
+        } finally {
+            setLoadingLedger(false);
+        }
+    };
+
+    const handleViewLedger = () => {
+        if (!showLedger && !ledgerBalance) {
+            fetchLedgerBalance();
+        }
+        setShowLedger(!showLedger);
+    };
+
+    const handleProceed = () => {
+        if (!reason) {
+            toast.error('Please select Reason for Challan.');
+            return;
+        }
+        
+        if (reason === 'monthly') {
+            if (!challanType) {
+                toast.error('Please select Challan Type.');
+                return;
+            }
+            setIsNavigating(true);
+            setTimeout(() => {
+                navigate('/payment/create-challan', { state: { reasonText: 'Monthly payment for quarterly return' } });
+            }, 600);
+        } else {
+            setIsNavigating(true);
+            setTimeout(() => {
+                navigate('/payment/create-challan', { state: { reasonText: 'Any other payment' } });
+            }, 600);
+        }
+    };
+
 
     const handleReasonChange = (e) => {
         setReason(e.target.value);
@@ -20,6 +90,11 @@ const ReasonForChallan = () => {
 
     return (
         <div className="dashboard-container" style={{ backgroundColor: '#f1f3f6' }}>
+            {isNavigating && (
+                <div className="navigating-loader-overlay">
+                    <div className="navigating-spinner"></div>
+                </div>
+            )}
             {/* Breadcrumb Bar */}
             <div className="dashboard-breadcrumb-bar">
                 <div className="breadcrumb-left">
@@ -33,6 +108,16 @@ const ReasonForChallan = () => {
                     <span>🌐 English</span>
                 </div>
             </div>
+
+            {/* Profile Header Section */}
+            {user && (
+                <div className="profile-info-banner" style={{ backgroundColor: '#fff', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ddd', fontSize: '13px' }}>
+                    <div><strong>GSTIN:</strong> {user.gstin || localStorage.getItem('gst_trn') || 'N/A'}</div>
+                    <div><strong>Trade Name:</strong> {user.trade_name || user.legal_name || 'N/A'}</div>
+                    <div><strong>Company Name:</strong> {user.company_name || user.legal_name || 'N/A'}</div>
+                    <div><strong>User ID:</strong> {user.username || 'N/A'}</div>
+                </div>
+            )}
 
             {/* Main Content Area */}
             <div className="challan-main-content">
@@ -137,50 +222,59 @@ const ReasonForChallan = () => {
                         )}
 
                         <div className="challan-action-row">
-                            <button className="btn-ledger" onClick={() => setShowLedger(!showLedger)}>
+                            <button className="btn-ledger" onClick={handleViewLedger}>
                                 VIEW LEDGER BALANCE <span className={`arrow ${showLedger ? 'up' : 'down'}`}>▼</span>
                             </button>
-                            <button className={`btn-proceed ${(!reason || (reason === 'monthly' && !challanType)) ? 'disabled' : ''}`}>
+                            <button 
+                                className={`btn-proceed ${(!reason || (reason === 'monthly' && !challanType)) ? 'disabled' : ''}`}
+                                onClick={handleProceed}
+                            >
                                 PROCEED
                             </button>
                         </div>
 
                         {showLedger && (
                             <div className="ledger-table-container">
-                                <div className="ledger-date">Ledger Balance as on date : 11-03-2026</div>
-                                <table className="ledger-table">
-                                    <thead>
-                                        <tr>
-                                            <th rowSpan="2">Type of Ledger</th>
-                                            <th colSpan="5">Available Balance (₹)</th>
-                                        </tr>
-                                        <tr>
-                                            <th>Integrated Tax (₹)</th>
-                                            <th>Central Tax (₹)</th>
-                                            <th>State Tax (₹)</th>
-                                            <th>CESS (₹)</th>
-                                            <th>Total (₹)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td>Electronic Cash Ledger</td>
-                                            <td>0.00</td>
-                                            <td>0.00</td>
-                                            <td>0.00</td>
-                                            <td>0.00</td>
-                                            <td style={{ color: '#167dc2', fontWeight: 'bold' }}>0.00</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Electronic Credit Ledger</td>
-                                            <td>0.00</td>
-                                            <td>1,58,671.00</td>
-                                            <td>1,58,670.00</td>
-                                            <td>0.00</td>
-                                            <td style={{ color: '#167dc2', fontWeight: 'bold' }}>3,17,341.00</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <div className="ledger-date">Ledger Balance as on date : {new Date().toLocaleDateString('en-IN').replace(/\//g, '-')}</div>
+                                {loadingLedger ? (
+                                    <div style={{ textAlign: 'center', padding: '20px' }}>Loading...</div>
+                                ) : ledgerBalance ? (
+                                    <table className="ledger-table">
+                                        <thead>
+                                            <tr>
+                                                <th rowSpan="2">Type of Ledger</th>
+                                                <th colSpan="5">Available Balance (₹)</th>
+                                            </tr>
+                                            <tr>
+                                                <th>Integrated Tax (₹)</th>
+                                                <th>Central Tax (₹)</th>
+                                                <th>State Tax (₹)</th>
+                                                <th>CESS (₹)</th>
+                                                <th>Total (₹)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>Electronic Cash Ledger</td>
+                                                <td>{ledgerBalance.electronicCashLedger.integratedTax.toFixed(2)}</td>
+                                                <td>{ledgerBalance.electronicCashLedger.centralTax.toFixed(2)}</td>
+                                                <td>{ledgerBalance.electronicCashLedger.stateTax.toFixed(2)}</td>
+                                                <td>{ledgerBalance.electronicCashLedger.cess.toFixed(2)}</td>
+                                                <td style={{ color: '#167dc2', fontWeight: 'bold' }}>{ledgerBalance.electronicCashLedger.total.toFixed(2)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td>Electronic Credit Ledger</td>
+                                                <td>{ledgerBalance.electronicCreditLedger.integratedTax.toFixed(2)}</td>
+                                                <td>{ledgerBalance.electronicCreditLedger.centralTax.toFixed(2)}</td>
+                                                <td>{ledgerBalance.electronicCreditLedger.stateTax.toFixed(2)}</td>
+                                                <td>{ledgerBalance.electronicCreditLedger.cess.toFixed(2)}</td>
+                                                <td style={{ color: '#167dc2', fontWeight: 'bold' }}>{ledgerBalance.electronicCreditLedger.total.toFixed(2)}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: '20px' }}>No Data Available</div>
+                                )}
                             </div>
                         )}
 

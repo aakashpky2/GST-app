@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import './Dashboard.css';
 
@@ -28,6 +28,15 @@ const subMenus = {
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const handleCreateChallanNav = () => {
+        navigate('/payment/create-challan');
+        setTimeout(() => {
+            navigate('/payment/reason-for-challan');
+        }, 0);
+    };
+
     const [activeMenu, setActiveMenu] = useState(null);
     const [showAadhaarModal, setShowAadhaarModal] = useState(true);
     const [displayName, setDisplayName] = useState(localStorage.getItem('gst_legal_name') || 'GST User');
@@ -155,8 +164,8 @@ const Dashboard = () => {
                         <div className="action-buttons-container" style={{ marginTop: '30px', flexDirection: 'column', gap: '20px' }}>
                             <div className="top-buttons-row" style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
                                 <button className="action-btn" onClick={() => navigate('/returns-dashboard')}>RETURN DASHBOARD <span>&gt;</span></button>
-                                <button className="action-btn" onClick={() => navigate('/payment/challan-reason')}>CREATE CHALLAN <span>&gt;</span></button>
-                                <button className="action-btn">VIEW NOTICE(S) AND ORDER(S) <span>&gt;</span></button>
+                                <button className="action-btn" onClick={handleCreateChallanNav}>CREATE CHALLAN <span>&gt;</span></button>
+                                <button className="action-btn" onClick={() => navigate('/services/user-services/notices-orders')}>VIEW NOTICE(S) AND ORDER(S) <span>&gt;</span></button>
                             </div>
                             <div className="middle-button-row" style={{ display: 'flex', justifyContent: 'center' }}>
                                 <button className="action-btn" style={{ maxWidth: '300px' }} onClick={() => navigate('/returns/annual-return')}>ANNUAL RETURN <span>&gt;</span></button>

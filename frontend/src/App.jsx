@@ -59,6 +59,7 @@ import SearchHsnCode from './pages/SearchHsnCode';
 import CauseList from './pages/CauseList';
 import VerifyRfn from './pages/VerifyRfn';
 import HolidayList from './pages/HolidayList';
+import NoticesAndOrders from './pages/NoticesAndOrders';
 import LocateGstp from './pages/LocateGstp';
 import GstLaw from './pages/GstLaw';
 import ManageGstLinks from './pages/admin/ManageGstLinks';
@@ -69,6 +70,8 @@ import SearchTaxpayerPAN from './pages/SearchTaxpayerPAN';
 import SearchTaxpayerTempID from './pages/SearchTaxpayerTempID';
 import SearchCompositionTaxpayer from './pages/SearchCompositionTaxpayer';
 import ReasonForChallan from './pages/ReasonForChallan';
+import SavedChallan from './pages/SavedChallan';
+import ChallanHistory from './pages/ChallanHistory';
 import ReturnsOfflineTool from './pages/ReturnsOfflineTool';
 import Tran1OfflineTools from './pages/Tran1OfflineTools';
 import GSTR3BOfflineUtility from './pages/GSTR3BOfflineUtility';
@@ -124,13 +127,18 @@ function App() {
           <Route path="/registration" element={<Registration />} />
           <Route path="/services/registration/track-application-status" element={<TrackApplicationStatus />} />
           <Route path="/payment/create-challan" element={<CreateChallan />} />
+          <Route path="/payment/create-challan/quarterly-return" element={<CreateChallan />} />
+          <Route path="/payment/create-challan/other-payment" element={<CreateChallan />} />
+          <Route path="/payment/saved-challan" element={<SavedChallan />} />
+          <Route path="/payment/challan-history" element={<ChallanHistory />} />
           <Route path="/services/payments/grievance-against-payment" element={<GrievanceAgainstPayment />} />
           <Route path="/services/payments/track-payment-status" element={<TrackPaymentStatus />} />
           <Route path="/services/user-services/search-hsn-code" element={<SearchHsnCode />} />
-          <Route path="/services/user-services/cause-list" element={<CauseList />} />
           <Route path="/services/user-services/verify-rfn" element={<VerifyRfn />} />
           <Route path="/services/user-services/holiday-list" element={<HolidayList />} />
+          <Route path="/services/user-services/cause-list" element={<CauseList />} />
           <Route path="/services/user-services/locate-gstp" element={<LocateGstp />} />
+          <Route path="/services/user-services/notices-orders" element={<NoticesAndOrders />} />
           <Route path="/gst-law" element={<GstLaw />} />
           <Route path="/admin/gst-links" element={<ManageGstLinks />} />
           <Route path="/admin/gst-statistics" element={<ManageGstStatistics />} />
@@ -236,7 +244,7 @@ function App() {
           <Route path="/state-specific-information" element={<StateSpecificInformation />} />
           <Route path="/aadhaar-authentication" element={<AadhaarAuthentication />} />
           <Route path="/verification" element={<Verification />} />
-          <Route path="/payment/challan-reason" element={<ReasonForChallan />} />
+          <Route path="/payment/reason-for-challan" element={<ReasonForChallan />} />
         </Routes>
       </Layout>
     </Router>

@@ -1,98 +1,204 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import './CreateChallan.css';
+
+// Simple Indian Numbering System to words converter
+const numberToWords = (num) => {
+    if (num === 0) return 'Zero Only';
+    const a = ['','One ','Two ','Three ','Four ', 'Five ','Six ','Seven ','Eight ','Nine ','Ten ','Eleven ','Twelve ','Thirteen ','Fourteen ','Fifteen ','Sixteen ','Seventeen ','Eighteen ','Nineteen '];
+    const b = ['', '', 'Twenty','Thirty','Forty','Fifty', 'Sixty','Seventy','Eighty','Ninety'];
+
+    const numStr = num.toString();
+    if (numStr.length > 9) return 'Amount Too Large';
+    
+    const n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return '';
+    
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) + 'Only' : 'Only';
+    
+    return str.trim();
+};
 
 const CreateChallan = () => {
-    const [gstin, setGstin] = useState('');
-    const [error, setError] = useState('');
+    const navigate = useNavigate();
+    const location = useLocation();
+    const [reasonText, setReasonText] = useState('Any other payment');
+    const [paymentMode, setPaymentMode] = useState('');
 
-    const handleProceed = (e) => {
-        e.preventDefault();
-        if (!gstin.trim()) {
-            setError('This field is required');
-        } else {
-            setError('');
-            // Logic to proceed
+    useEffect(() => {
+        if (location.state && location.state.reasonText) {
+            setReasonText(location.state.reasonText);
         }
+    }, [location]);
+
+    const [rows, setRows] = useState({
+        cgst: { tax: '', interest: '', penalty: '', fees: '', other: '' },
+        igst: { tax: '', interest: '', penalty: '', fees: '', other: '' },
+        cess: { tax: '', interest: '', penalty: '', fees: '', other: '' },
+        sgst: { tax: '', interest: '', penalty: '', fees: '', other: '' },
+    });
+
+    const handleInputChange = (rowKey, colKey, value) => {
+        if (value && !/^\d+$/.test(value)) return;
+        setRows(prev => ({
+            ...prev,
+            [rowKey]: {
+                ...prev[rowKey],
+                [colKey]: value
+            }
+        }));
     };
 
+    const getRowTotal = (rowKey) => {
+        const r = rows[rowKey];
+        return (Number(r.tax) || 0) + (Number(r.interest) || 0) + (Number(r.penalty) || 0) + (Number(r.fees) || 0) + (Number(r.other) || 0);
+    };
+
+    const grandTotal = ['cgst', 'igst', 'cess', 'sgst'].reduce((sum, key) => sum + getRowTotal(key), 0);
+
+    const handleEditReason = () => {
+        navigate('/payment/reason-for-challan');
+    };
+
+    const handleGenerate = () => {
+        // Mock generation logic
+        navigate('/payment/create-challan');
+    };
+
+    const rowConfigs = [
+        { key: 'cgst', label: 'CGST(0005)' },
+        { key: 'igst', label: 'IGST(0008)' },
+        { key: 'cess', label: 'CESS(0009)' },
+        { key: 'sgst', label: 'Kerala SGST(0006)' },
+    ];
+
+    const colConfigs = [
+        { key: 'tax', label: 'Tax (₹)' },
+        { key: 'interest', label: 'Interest (₹)' },
+        { key: 'penalty', label: 'Penalty (₹)' },
+        { key: 'fees', label: 'Fees (₹)' },
+        { key: 'other', label: 'Other (₹)' },
+    ];
+
     return (
-        <div style={{ backgroundColor: '#f1f3f6', padding: '20px 120px', minHeight: 'calc(100vh - 200px)' }}>
-            {/* Breadcrumb */}
-            <div style={{ fontSize: '14px', marginBottom: '20px' }}>
-                <Link to="/" style={{ color: '#3b82f6', textDecoration: 'none' }}>Home</Link>
-                <span style={{ color: '#4b5563', margin: '0 5px' }}>&gt;</span>
-                <span style={{ color: '#4b5563' }}>Payment</span>
-                <span style={{ color: '#4b5563', margin: '0 5px' }}>&gt;</span>
-                <span style={{ color: '#4b5563' }}>Create Challan</span>
+        <div className="cc-container">
+            {/* Breadcrumb Bar */}
+            <div className="cc-breadcrumb">
+                <Link to="/dashboard">Dashboard</Link>
+                <span>&gt;</span>
+                <span>Payment</span>
+                <span>&gt;</span>
+                <span>Create Challan</span>
             </div>
 
-            {/* Main Content Box */}
-            <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderTop: '3px solid #1eb3a6', padding: '30px', borderRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', position: 'relative' }}>
+            <div className="cc-content-box">
+                {/* Tabs */}
+                <div className="cc-tabs-container">
+                    <div className="cc-tab active">Create Challan</div>
+                    <div className="cc-tab" onClick={() => navigate('/payment/saved-challan')}>Saved Challan</div>
+                    <div className="cc-tab" onClick={() => navigate('/payment/challan-history')}>Challan History</div>
+                </div>
+
+                {/* Reason For Challan Section */}
+                <div className="cc-section-title">
+                    <span>Reason For Challan</span>
+                    <span className="cc-edit-reason" onClick={handleEditReason}>Edit Reason</span>
+                </div>
+
+                <div className="cc-reason-box">
+                    <div className="cc-reason-box-title">Reason</div>
+                    <div className="cc-reason-box-value">{reasonText}</div>
+                </div>
+
+                {/* Details of Deposit Section */}
+                <div className="cc-section-title">
+                    <span>Details of Deposit</span>
+                </div>
+
+                <table className="cc-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            {colConfigs.map(c => <th key={c.key}>{c.label}</th>)}
+                            <th>Total (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rowConfigs.map(row => (
+                            <tr key={row.key}>
+                                <td className="row-label">{row.label}</td>
+                                {colConfigs.map(col => (
+                                    <td key={col.key}>
+                                        <input
+                                            type="text"
+                                            className="cc-input"
+                                            value={rows[row.key][col.key]}
+                                            onChange={(e) => handleInputChange(row.key, col.key, e.target.value)}
+                                        />
+                                    </td>
+                                ))}
+                                <td>
+                                    <input
+                                        type="text"
+                                        className="cc-input cc-input-disabled"
+                                        value={getRowTotal(row.key)}
+                                        disabled
+                                        readOnly
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+
+                <div className="cc-grand-total">
+                    Total Challan Amount: <span>₹ {grandTotal}</span>
+                </div>
                 
-                {/* Language Selector */}
-                <div style={{ position: 'absolute', top: '15px', right: '30px', display: 'flex', alignItems: 'center', fontSize: '14px', color: '#333' }}>
-                    <span style={{ marginRight: '5px' }}>🌐</span>
-                    <select style={{ border: 'none', background: 'transparent', cursor: 'pointer', outline: 'none', color: '#0056b3', fontWeight: '500' }}>
-                        <option value="english">English</option>
-                    </select>
+                <div className="cc-amount-words">
+                    Total Challan Amount (In Words): <span>{numberToWords(grandTotal)}</span>
                 </div>
 
-                <div style={{ borderBottom: '1px solid #e5e7eb', paddingBottom: '15px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ color: '#001b5c', fontSize: '24px', fontWeight: '500', margin: 0 }}>
-                        Create Challan
-                    </h2>
-                </div>
-
-                <div style={{ textAlign: 'right', marginBottom: '30px', fontSize: '13px', color: '#d32f2f' }}>
-                    <span style={{ fontSize: '16px' }}>•</span> indicates mandatory fields
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <form onSubmit={handleProceed} style={{ width: '400px' }}>
-                        <div style={{ marginBottom: '20px' }}>
-                            <label style={{ display: 'block', fontSize: '14px', color: '#333', marginBottom: '8px', fontWeight: '500' }}>
-                                GSTIN/Other Id <span style={{ color: '#d32f2f' }}>*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                value={gstin}
-                                onChange={(e) => {
-                                    setGstin(e.target.value);
-                                    if (e.target.value.trim()) setError('');
-                                }}
-                                placeholder="Enter GSTIN/Other Id"
-                                style={{ 
-                                    width: '100%', 
-                                    padding: '10px 12px', 
-                                    fontSize: '14px', 
-                                    border: `1px solid ${error ? '#d32f2f' : '#ccc'}`, 
-                                    borderRadius: '4px',
-                                    outline: 'none',
-                                    textTransform: 'uppercase'
-                                }}
-                            />
-                            {error && <div style={{ color: '#d32f2f', fontSize: '12px', marginTop: '5px' }}>{error}</div>}
+                {/* Payment Modes Section */}
+                <div className="cc-payment-modes">
+                    <div className="cc-payment-modes-title">
+                        Payment Modes <span className="red-asterisk">*</span>
+                    </div>
+                    <div className="cc-pm-grid">
+                        <div 
+                            className={`cc-pm-option ${paymentMode === 'e-payment' ? 'active' : ''}`}
+                            onClick={() => setPaymentMode('e-payment')}
+                        >
+                            <input type="radio" checked={paymentMode === 'e-payment'} readOnly style={{marginRight: '5px'}}/>
+                            💳 E-Payment
                         </div>
-
-                        <div style={{ textAlign: 'center', marginTop: '30px' }}>
-                            <button 
-                                type="submit" 
-                                style={{ 
-                                    backgroundColor: '#0f4c81', 
-                                    color: '#fff', 
-                                    border: 'none', 
-                                    padding: '10px 30px', 
-                                    fontSize: '14px', 
-                                    fontWeight: '500', 
-                                    borderRadius: '4px', 
-                                    cursor: 'pointer',
-                                    textTransform: 'uppercase'
-                                }}
-                            >
-                                PROCEED
-                            </button>
+                        <div 
+                            className={`cc-pm-option ${paymentMode === 'otc' ? 'active' : ''}`}
+                            onClick={() => setPaymentMode('otc')}
+                        >
+                            <input type="radio" checked={paymentMode === 'otc'} readOnly style={{marginRight: '5px'}}/>
+                            💵 Over The Counter
                         </div>
-                    </form>
+                        <div 
+                            className={`cc-pm-option ${paymentMode === 'neft' ? 'active' : ''}`}
+                            onClick={() => setPaymentMode('neft')}
+                        >
+                            <input type="radio" checked={paymentMode === 'neft'} readOnly style={{marginRight: '5px'}}/>
+                            🏦 NEFT/RTGS
+                        </div>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="cc-actions">
+                    <button className="cc-btn cc-btn-primary" onClick={handleEditReason}>EDIT REASON</button>
+                    <button className="cc-btn cc-btn-secondary" disabled={grandTotal <= 0}>SAVE</button>
+                    <button className="cc-btn cc-btn-primary" disabled={grandTotal <= 0 || !paymentMode} onClick={handleGenerate}>GENERATE CHALLAN</button>
                 </div>
             </div>
         </div>

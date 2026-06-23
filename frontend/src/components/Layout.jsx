@@ -11,6 +11,15 @@ const Layout = ({ children }) => {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [displayName, setDisplayName] = useState(localStorage.getItem('gst_legal_name') || 'GST USER');
 
+    const handleCreateChallanNav = (e) => {
+        e.preventDefault();
+        setActiveDropdown(null);
+        navigate('/payment/create-challan');
+        setTimeout(() => {
+            navigate('/payment/reason-for-challan');
+        }, 0);
+    };
+
     // All paths that use the GST portal's own nav (bd-navbar) instead of the Layout navbar
     const isDashboard = location.pathname.startsWith('/dashboard') ||
         location.pathname.startsWith('/returns') ||
@@ -316,7 +325,7 @@ const Layout = ({ children }) => {
                         )}
                         {activeSubMenu === 'payments' && (
                             <div className="dropdown-sub-row">
-                                <Link to="/payment/create-challan" onClick={() => setActiveDropdown(null)}>Create Challan</Link>
+                                <a href="#" onClick={handleCreateChallanNav}>Create Challan</a>
                                 <Link to="/services/payments/track-payment-status" onClick={() => setActiveDropdown(null)}>Track Payment Status</Link>
                                 <Link to="/services/payments/grievance-against-payment" onClick={() => setActiveDropdown(null)}>Grievance against Payment (GST PMT-07)</Link>
                             </div>
@@ -330,6 +339,7 @@ const Layout = ({ children }) => {
                                 <Link to="/services/user-services/holiday-list" onClick={() => setActiveDropdown(null)}>Holiday List</Link>
                                 <Link to="/services/user-services/locate-gstp" onClick={() => setActiveDropdown(null)}>Locate GST Practitioner (GSTP)</Link>
                                 <Link to="#" onClick={() => setActiveDropdown(null)}>Search Advance Ruling</Link>
+                                <Link to="/services/user-services/notices-orders" onClick={() => setActiveDropdown(null)}>View Notices and Orders</Link>
                             </div>
                         )}
                         {activeSubMenu === 'refunds' && (
