@@ -148,8 +148,8 @@ const ReturnsDashboard = () => {
                                     </div>
                                     <div className="returns-card-body">
                                         <div className="returns-card-actions centered-actions">
-                                            <button className="returns-action-btn">VIEW</button>
-                                            <button className="returns-action-btn">DOWNLOAD</button>
+                                            <button className="returns-action-btn" onClick={() => navigate('/returns/gstr2a')}>VIEW</button>
+                                            <button className="returns-action-btn" onClick={() => navigate('/returns/gstr2a/offline-download')}>DOWNLOAD</button>
                                         </div>
                                     </div>
                                 </div>

@@ -82,6 +82,22 @@ import GSTR10OfflineUtility from './pages/GSTR10OfflineUtility';
 import GSTR9AOfflineUtility from './pages/GSTR9AOfflineUtility';
 import GSTR4OfflineTool from './pages/GSTR4OfflineTool';
 import IMSOfflineUtility from './pages/IMSOfflineUtility';
+import GSTR2ADashboard from './pages/GSTR2ADashboard';
+import GSTR2AB2BInvoices from './pages/GSTR2AB2BInvoices';
+import GSTR2ACreditDebitNotes from './pages/GSTR2ACreditDebitNotes';
+import GSTR2AAmendmentsB2B from './pages/GSTR2AAmendmentsB2B';
+import GSTR2AAmendmentsCreditDebit from './pages/GSTR2AAmendmentsCreditDebit';
+import GSTR2AECODocuments from './pages/GSTR2AECODocuments';
+import GSTR2AAmendmentsECODocuments from './pages/GSTR2AAmendmentsECODocuments';
+import GSTR2AISDCredits from './pages/GSTR2AISDCredits';
+import GSTR2AAmendmentsISDCredits from './pages/GSTR2AAmendmentsISDCredits';
+import GSTR2ATDSCredits from './pages/GSTR2ATDSCredits';
+import GSTR2AAmendmentsTDSCredits from './pages/GSTR2AAmendmentsTDSCredits';
+import GSTR2ATCSCredits from './pages/GSTR2ATCSCredits';
+import GSTR2AImportGoodsOverseas from './pages/GSTR2AImportGoodsOverseas';
+import GSTR2AImportSEZGoods from './pages/GSTR2AImportSEZGoods';
+import GSTR2AOfflineDownload from './pages/GSTR2AOfflineDownload';
+import { Navigate } from 'react-router-dom';
 import MatchingOfflineTool from './pages/MatchingOfflineTool';
 import Tran2OfflineTools from './pages/Tran2OfflineTools';
 import ITC01OfflineTool from './pages/ITC01OfflineTool';
@@ -195,6 +211,23 @@ function App() {
           <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/returns/gstr1/summary" element={<GSTR1Summary />} />
           <Route path="/returns/gstr1/pdf-preview" element={<GSTR1PrintPreview />} />
+          <Route path="/returns/gstr2a" element={<GSTR2ADashboard />} />
+          <Route path="/returns/gstr2a/b2b-invoices" element={<GSTR2AB2BInvoices />} />
+          <Route path="/returns/gstr2a/credit-debit-notes" element={<GSTR2ACreditDebitNotes />} />
+          <Route path="/returns/gstr2a/amendments-b2b" element={<GSTR2AAmendmentsB2B />} />
+          <Route path="/returns/gstr2a/amendments-credit-debit" element={<GSTR2AAmendmentsCreditDebit />} />
+          <Route path="/returns/gstr2a/eco-documents" element={<GSTR2AECODocuments />} />
+          <Route path="/returns/gstr2a/amendments-eco-documents" element={<GSTR2AAmendmentsECODocuments />} />
+          <Route path="/returns/gstr2a/isd-credits" element={<GSTR2AISDCredits />} />
+          <Route path="/returns/gstr2a/amendments-isd-credits" element={<GSTR2AAmendmentsISDCredits />} />
+          <Route path="/returns/gstr2a/tds-credits" element={<GSTR2ATDSCredits />} />
+          <Route path="/returns/gstr2a/amendments-tds-credits" element={<GSTR2AAmendmentsTDSCredits />} />
+          <Route path="/returns/gstr2a/tcs-credits" element={<GSTR2ATCSCredits />} />
+          <Route path="/returns/gstr2a/import-goods-overseas" element={<GSTR2AImportGoodsOverseas />} />
+          <Route path="/returns/gstr2a/import-overseas" element={<Navigate to="/returns/gstr2a/import-goods-overseas" replace />} />
+          <Route path="/returns/gstr2a/import-sez-goods" element={<GSTR2AImportSEZGoods />} />
+          <Route path="/returns/gstr2a/import-sez" element={<Navigate to="/returns/gstr2a/import-sez-goods" replace />} />
+          <Route path="/returns/gstr2a/offline-download" element={<GSTR2AOfflineDownload />} />
           <Route path="/returns/gstr1/b2b" element={<GSTR1B2BDashboard />} />
           <Route path="/returns/gstr1/b2b/add" element={<GSTR1B2BAddInvoice />} />
           <Route path="/returns/auth/gstr1/b2b/amendment/summary" element={<GSTR1B2BAmendmentSummary />} />
