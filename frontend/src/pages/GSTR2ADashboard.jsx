@@ -98,7 +98,7 @@ const GSTR2ADashboard = () => {
                 {/* PART-A */}
                 <div className="gstr2a-part-section">
                     <h3 className="part-title">PART-A</h3>
-                    <div className="gstr2a-cards-grid">
+                    <div className="gstr2a-cards-grid two-cols">
                         {cards.partA.map((card, idx) => (
                             <div key={idx} className="gstr2a-nav-card" onClick={() => navigate(card.route)}>
                                 {card.title}
@@ -146,7 +146,6 @@ const GSTR2ADashboard = () => {
                 {/* Bottom Actions */}
                 <div className="gstr2a-actions">
                     <button className="gstr2a-btn-back" onClick={() => navigate('/returns-dashboard')}>BACK</button>
-                    <button className="gstr2a-btn-download" onClick={() => navigate('/returns/gstr2a/offline-download')}>DOWNLOAD</button>
                 </div>
             </div>
         </div>
