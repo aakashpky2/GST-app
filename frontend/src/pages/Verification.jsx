@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import RegistrationTabPage from '../components/RegistrationTabPage';
@@ -11,11 +11,63 @@ const Verification = () => {
     const [verified, setVerified] = useState(false);
     const [isCompleting, setIsCompleting] = useState(false);
     const [credentials, setCredentials] = useState(null);
+    const [availableNames, setAvailableNames] = useState([]);
     const [form, setForm] = useState({
         declarerName: '',
         place: '',
         designation: 'Proprietor'
     });
+
+    useEffect(() => {
+        const fetchNames = async () => {
+            try {
+                const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+                const namesSet = new Set();
+                
+                // Helper to safely format name
+                const formatName = (data) => {
+                    if (!data) return null;
+                    const name = [data.firstName, data.middleName, data.lastName].filter(Boolean).join(' ').trim();
+                    return name ? name.toUpperCase() : null;
+                };
+
+                // Add Legal Name from Local Storage as Fallback
+                const legalName = localStorage.getItem('gst_legal_name');
+                if (legalName) namesSet.add(legalName.toUpperCase());
+
+                // Fetch Business Details (Proprietor)
+                try {
+                    const bdRes = await api.get(`/forms/tab/${trn}/BusinessDetails`);
+                    if (bdRes.data?.tradeName) namesSet.add(bdRes.data.tradeName.toUpperCase());
+                } catch (e) {
+                    console.log("No BusinessDetails found");
+                }
+
+                // Fetch Promoter/Partners
+                try {
+                    const ppRes = await api.get(`/forms/tab/${trn}/PromoterPartners`);
+                    const ppName = formatName(ppRes.data);
+                    if (ppName) namesSet.add(ppName);
+                } catch (e) {
+                    console.log("No PromoterPartners found");
+                }
+
+                // Fetch Authorized Signatory
+                try {
+                    const asRes = await api.get(`/forms/tab/${trn}/AuthorizedSignatory`);
+                    const asName = formatName(asRes.data);
+                    if (asName) namesSet.add(asName);
+                } catch (e) {
+                    console.log("No AuthorizedSignatory found");
+                }
+                
+                setAvailableNames(Array.from(namesSet));
+            } catch (err) {
+                console.error("Error fetching names:", err);
+            }
+        };
+        fetchNames();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -214,7 +266,9 @@ const Verification = () => {
                             onChange={handleChange}
                         >
                             <option value="">Select</option>
-                            <option value="AKASH P KY">AKASH P KY</option>
+                            {availableNames.map((name, index) => (
+                                <option key={index} value={name}>{name}</option>
+                            ))}
                         </select>
                     </div>
                     <div className="bd-form-group">

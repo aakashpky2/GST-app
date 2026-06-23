@@ -61,6 +61,8 @@ const GSTR1Dashboard = () => {
     const [isNilFile, setIsNilFile] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showAmendDetails, setShowAmendDetails] = useState(false);
+    const [isAddRecordOpen, setIsAddRecordOpen] = useState(true);
+    const [isEInvoiceOpen, setIsEInvoiceOpen] = useState(true);
 
     const fetchGstr1Data = async () => {
         try {
@@ -326,13 +328,15 @@ const GSTR1Dashboard = () => {
                     {!isNilFile && (
                         <>
                             {/* Add Record Details Accordion */}
-                            <div className="gstr1-accordion open">
-                                <div className="accordion-header">
+                            <div className={`gstr1-accordion ${isAddRecordOpen ? 'open' : ''}`}>
+                                <div className="accordion-header" onClick={() => setIsAddRecordOpen(!isAddRecordOpen)} style={{ cursor: 'pointer' }}>
                                     <h3>ADD RECORD DETAILS</h3>
-                                    <span className="accordion-icon">▲</span>
+                                    <span className="accordion-icon">{isAddRecordOpen ? "▲" : "▼"}</span>
                                 </div>
-                                <div className="accordion-body">
-                                    <div className="record-cards-grid">
+                                <div className={`accordion-body-wrapper ${isAddRecordOpen ? 'open' : ''}`}>
+                                    <div className="accordion-body-inner">
+                                        <div className="accordion-body">
+                                            <div className="record-cards-grid">
                                         {recordCards.map((title, index) => (
                                             <div
                                                 className="record-card"
@@ -370,6 +374,8 @@ const GSTR1Dashboard = () => {
                                                 </div>
                                             </div>
                                         ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -380,9 +386,10 @@ const GSTR1Dashboard = () => {
                                     <h3>AMEND RECORD DETAILS</h3>
                                     <span className="accordion-icon">{showAmendDetails ? "▲" : "▼"}</span>
                                 </div>
-                                {showAmendDetails && (
-                                    <div className="accordion-body">
-                                        <div className="record-cards-grid">
+                                <div className={`accordion-body-wrapper ${showAmendDetails ? 'open' : ''}`}>
+                                    <div className="accordion-body-inner">
+                                        <div className="accordion-body">
+                                            <div className="record-cards-grid">
                                             {amendCards.map((card, index) => (
                                                 <div 
                                                     className="record-card" 
@@ -417,9 +424,10 @@ const GSTR1Dashboard = () => {
                                                     </div>
                                                 </div>
                                             ))}
+                                            </div>
                                         </div>
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </>
                     )}
@@ -433,10 +441,21 @@ const GSTR1Dashboard = () => {
                     </div>
 
                     {!isNilFile && (
-                        <div className="gstr1-accordion">
-                            <div className="accordion-header">
+                        <div className={`gstr1-accordion ${isEInvoiceOpen ? 'open' : ''}`}>
+                            <div className="accordion-header" onClick={() => setIsEInvoiceOpen(!isEInvoiceOpen)} style={{ cursor: 'pointer' }}>
                                 <h3>E-INVOICE DOWNLOAD HISTORY</h3>
-                                <span className="accordion-icon">▼</span>
+                                <span className="accordion-icon">{isEInvoiceOpen ? "▲" : "▼"}</span>
+                            </div>
+                            <div className={`accordion-body-wrapper ${isEInvoiceOpen ? 'open' : ''}`}>
+                                <div className="accordion-body-inner">
+                                    <div className="accordion-body">
+                                        <div style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '15px 20px', border: '1px solid #bae6fd', marginBottom: '15px', fontSize: '14px', display: 'flex', alignItems: 'center' }}>
+                                            <span className="info-icon" style={{ marginRight: '10px', backgroundColor: '#0369a1', color: '#fff', borderRadius: '50%', width: '18px', height: '18px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 'bold' }}>i</span>
+                                            No files available for download
+                                        </div>
+                                        <div style={{ backgroundColor: '#fff', minHeight: '120px', borderRadius: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     )}

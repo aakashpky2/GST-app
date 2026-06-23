@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import api from '../api/axios';
 import './Dashboard.css';
 
 const subMenus = {
@@ -29,6 +30,26 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const [activeMenu, setActiveMenu] = useState(null);
     const [showAadhaarModal, setShowAadhaarModal] = useState(true);
+    const [displayName, setDisplayName] = useState(localStorage.getItem('gst_legal_name') || 'GST User');
+
+    React.useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                // We use our axios instance which automatically passes the auth token
+                const { data } = await api.get('/auth/me');
+                if (data?.success && data?.data) {
+                    const user = data.data;
+                    const finalName = user.company_name || user.legal_name || 'GST User';
+                    setDisplayName(finalName);
+                    // Update localStorage so other places can use it immediately if needed
+                    localStorage.setItem('gst_legal_name', finalName);
+                }
+            } catch (err) {
+                console.warn('Failed to fetch user data for dashboard', err);
+            }
+        };
+        fetchUserData();
+    }, []);
 
     const toggleMenu = (menu) => {
         setActiveMenu(prev => (prev === menu ? null : menu));
@@ -85,7 +106,7 @@ const Dashboard = () => {
             <div className="dashboard-main-content">
                 {/* Welcome Header */}
                 <div className="welcome-section" style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <h2 className="welcome-title" style={{ fontSize: '18px', fontWeight: 'bold' }}>Welcome {localStorage.getItem('gst_legal_name') || 'GST Registrant'} to GST Common Portal</h2>
+                    <h2 className="welcome-title" style={{ fontSize: '18px', fontWeight: 'bold' }}>Welcome {displayName} to GST Common Portal</h2>
 
                     <div className="filing-preference" style={{ fontSize: '14px', marginTop: '8px' }}>
                         Return filing preference (Jan-Mar 2026) : Monthly (<Link to="#" style={{ textDecoration: 'none', color: '#0056b3' }}>Change</Link>)
@@ -151,7 +172,7 @@ const Dashboard = () => {
                     <div className="content-right" style={{ width: '300px' }}>
                         {/* Profile Summary */}
                         <div className="profile-card">
-                            <div className="profile-name">{localStorage.getItem('gst_legal_name') || 'GST Registrant'}</div>
+                            <div className="profile-name">{displayName}</div>
                             <div className="profile-gstin">{localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GSTIN/TRN'}</div>
 
                             <Link to="/my-profile" className="view-profile-link">View Profile <span>▶</span></Link>

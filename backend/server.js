@@ -32,12 +32,30 @@ const authRoutes = require('./routes/auth');
 const registrationRoutes = require('./routes/registration');
 const businessDetailsRoutes = require('./routes/businessDetails');
 const formsRoutes = require('./routes/forms');
+const paymentsRoutes = require('./routes/payments');
+const hsnRoutes = require('./routes/hsn');
+const causeListRoutes = require('./routes/causeList');
+const rfnRoutes = require('./routes/rfn');
+const holidaysRoutes = require('./routes/holidays');
+const gstpRoutes = require('./routes/gstp');
+const gstLawRoutes = require('./routes/gstLaw');
+const gstStatisticsRoutes = require('./routes/gstStatistics');
+const searchTaxpayerRoutes = require('./routes/searchTaxpayer');
 
 // Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/registration', registrationRoutes);
 app.use('/api/business-details', businessDetailsRoutes);
 app.use('/api/forms', formsRoutes);
+app.use('/api/payments', paymentsRoutes);
+app.use('/api/hsn', hsnRoutes);
+app.use('/api/cause-list', causeListRoutes);
+app.use('/api/rfn', rfnRoutes);
+app.use('/api/holidays', holidaysRoutes);
+app.use('/api/gstp', gstpRoutes);
+app.use('/api/gst-law', gstLawRoutes);
+app.use('/api/gst-statistics', gstStatisticsRoutes);
+app.use('/api/search-taxpayer', searchTaxpayerRoutes);
 
 const PORT = process.env.PORT || 5000;
 

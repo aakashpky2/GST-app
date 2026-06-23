@@ -51,7 +51,44 @@ import GSTR9Questionnaire from './pages/GSTR9Questionnaire';
 import Logout from './pages/Logout';
 import ChangePassword from './pages/ChangePassword';
 import MyProfile from './pages/MyProfile';
+import TrackApplicationStatus from './pages/TrackApplicationStatus';
+import CreateChallan from './pages/CreateChallan';
+import GrievanceAgainstPayment from './pages/GrievanceAgainstPayment';
+import TrackPaymentStatus from './pages/TrackPaymentStatus';
+import SearchHsnCode from './pages/SearchHsnCode';
+import CauseList from './pages/CauseList';
+import VerifyRfn from './pages/VerifyRfn';
+import HolidayList from './pages/HolidayList';
+import LocateGstp from './pages/LocateGstp';
+import GstLaw from './pages/GstLaw';
+import ManageGstLinks from './pages/admin/ManageGstLinks';
+import ManageGstStatistics from './pages/admin/ManageGstStatistics';
+import GSTStatistics from './pages/GSTStatistics';
+import SearchTaxpayerGSTIN from './pages/SearchTaxpayerGSTIN';
+import SearchTaxpayerPAN from './pages/SearchTaxpayerPAN';
+import SearchTaxpayerTempID from './pages/SearchTaxpayerTempID';
+import SearchCompositionTaxpayer from './pages/SearchCompositionTaxpayer';
 import ReasonForChallan from './pages/ReasonForChallan';
+import ReturnsOfflineTool from './pages/ReturnsOfflineTool';
+import Tran1OfflineTools from './pages/Tran1OfflineTools';
+import GSTR3BOfflineUtility from './pages/GSTR3BOfflineUtility';
+import ITC03OfflineTool from './pages/ITC03OfflineTool';
+import GSTR7OfflineUtility from './pages/GSTR7OfflineUtility';
+import SRM1OfflineTool from './pages/SRM1OfflineTool';
+import GSTR10OfflineUtility from './pages/GSTR10OfflineUtility';
+import GSTR9AOfflineUtility from './pages/GSTR9AOfflineUtility';
+import GSTR4OfflineTool from './pages/GSTR4OfflineTool';
+import IMSOfflineUtility from './pages/IMSOfflineUtility';
+import MatchingOfflineTool from './pages/MatchingOfflineTool';
+import Tran2OfflineTools from './pages/Tran2OfflineTools';
+import ITC01OfflineTool from './pages/ITC01OfflineTool';
+import ITC04OfflineTool from './pages/ITC04OfflineTool';
+import GSTR4QuarterlyOfflineTool from './pages/GSTR4QuarterlyOfflineTool';
+import GSTR8OfflineUtility from './pages/GSTR8OfflineUtility';
+import SRM2OfflineUtility from './pages/SRM2OfflineUtility';
+import GSTR9OfflineTool from './pages/GSTR9OfflineTool';
+import GSTR9COfflineUtility from './pages/GSTR9COfflineUtility';
+import TDSAndTCSOfflineTool from './pages/TDSAndTCSOfflineTool';
 
 // GSTR-2B Modules
 import GSTR2BDashboard from './pages/GSTR2BDashboard';
@@ -85,11 +122,51 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/registration" element={<Registration />} />
+          <Route path="/services/registration/track-application-status" element={<TrackApplicationStatus />} />
+          <Route path="/payment/create-challan" element={<CreateChallan />} />
+          <Route path="/services/payments/grievance-against-payment" element={<GrievanceAgainstPayment />} />
+          <Route path="/services/payments/track-payment-status" element={<TrackPaymentStatus />} />
+          <Route path="/services/user-services/search-hsn-code" element={<SearchHsnCode />} />
+          <Route path="/services/user-services/cause-list" element={<CauseList />} />
+          <Route path="/services/user-services/verify-rfn" element={<VerifyRfn />} />
+          <Route path="/services/user-services/holiday-list" element={<HolidayList />} />
+          <Route path="/services/user-services/locate-gstp" element={<LocateGstp />} />
+          <Route path="/gst-law" element={<GstLaw />} />
+          <Route path="/admin/gst-links" element={<ManageGstLinks />} />
+          <Route path="/admin/gst-statistics" element={<ManageGstStatistics />} />
+          <Route path="/gst-statistics" element={<GSTStatistics />} />
+          <Route path="/search-taxpayer/gstin" element={<SearchTaxpayerGSTIN />} />
+          <Route path="/search-taxpayer/pan" element={<SearchTaxpayerPAN />} />
+          <Route path="/search-taxpayer/temp-id" element={<SearchTaxpayerTempID />} />
+          <Route path="/search-taxpayer/composition" element={<SearchCompositionTaxpayer />} />
+          {/* Fallback for the old route just in case */}
+          <Route path="/payments/grievance" element={<GrievanceAgainstPayment />} />
+          <Route path="/payments/track-status" element={<TrackPaymentStatus />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-username" element={<ForgotUsername />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/services/forgotpassword" element={<ForgotPassword />} />
           <Route path="/new-login" element={<NewUserLogin />} />
+          <Route path="/download/returns" element={<ReturnsOfflineTool />} />
+          <Route path="/download/trans1b" element={<Tran1OfflineTools />} />
+          <Route path="/download/gstr3b" element={<GSTR3BOfflineUtility />} />
+          <Route path="/download/itc03" element={<ITC03OfflineTool />} />
+          <Route path="/download/gstr7" element={<GSTR7OfflineUtility />} />
+          <Route path="/download/srm1" element={<SRM1OfflineTool />} />
+          <Route path="/download/gstr10" element={<GSTR10OfflineUtility />} />
+          <Route path="/download/gstr9a" element={<GSTR9AOfflineUtility />} />
+          <Route path="/download/gstr4x" element={<GSTR4OfflineTool />} />
+          <Route path="/download/ims" element={<IMSOfflineUtility />} />
+          <Route path="/download/gstr2b" element={<MatchingOfflineTool />} />
+          <Route path="/download/trans2" element={<Tran2OfflineTools />} />
+          <Route path="/download/itc01" element={<ITC01OfflineTool />} />
+          <Route path="/download/itc04" element={<ITC04OfflineTool />} />
+          <Route path="/download/gstr4/offline" element={<GSTR4QuarterlyOfflineTool />} />
+          <Route path="/download/gstr8" element={<GSTR8OfflineUtility />} />
+          <Route path="/download/srm2" element={<SRM2OfflineUtility />} />
+          <Route path="/download/gstr9" element={<GSTR9OfflineTool />} />
+          <Route path="/download/gstr9c" element={<GSTR9COfflineUtility />} />
+          <Route path="/download/gstr2x" element={<TDSAndTCSOfflineTool />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/returns-dashboard" element={<ReturnsDashboard />} />
           <Route path="/my-profile" element={<MyProfile />} />

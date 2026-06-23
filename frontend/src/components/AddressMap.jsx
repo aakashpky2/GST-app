@@ -13,14 +13,17 @@ const AddressMap = ({ address, onPick }) => {
     const containerRef = useRef(null);
     const mapRef       = useRef(null);
     const markerRef    = useRef(null);
+    const isInitializingRef = useRef(false);
     const [status, setStatus]     = useState(''); // '' | 'searching' | 'not_found'
 
     // ── Initialise map once ───────────────────────────────────
     useEffect(() => {
-        if (mapRef.current) return; // already initialised
+        if (mapRef.current || isInitializingRef.current) return; // already initialised
+        isInitializingRef.current = true;
 
         // Dynamically import Leaflet so it doesn't break SSR
         import('leaflet').then((leaflet) => {
+            if (!containerRef.current || (containerRef.current && containerRef.current._leaflet_id)) return;
             L = leaflet.default || leaflet;
 
             // Fix default icon paths (Vite breaks them otherwise)
@@ -62,6 +65,7 @@ const AddressMap = ({ address, onPick }) => {
         });
 
         return () => {
+            isInitializingRef.current = false;
             if (mapRef.current) {
                 mapRef.current.remove();
                 mapRef.current = null;
@@ -71,7 +75,7 @@ const AddressMap = ({ address, onPick }) => {
 
     // ── Geocode whenever address string changes ───────────────
     const geocode = useCallback(async (query) => {
-        if (!query || query.trim().length < 5 || !mapRef.current) return;
+        if (!query || query.trim().length < 5 || !mapRef.current || window._nominatimBlocked) return;
 
         setStatus('searching');
         try {
@@ -79,6 +83,13 @@ const AddressMap = ({ address, onPick }) => {
                 `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&countrycodes=in`,
                 { headers: { 'Accept-Language': 'en' } }
             );
+
+            if (res.status === 429) {
+                window._nominatimBlocked = true;
+                setStatus('rate_limited');
+                return;
+            }
+
             const results = await res.json();
 
             if (results.length === 0) {
@@ -96,14 +107,20 @@ const AddressMap = ({ address, onPick }) => {
 
             setStatus('');
             if (onPick) onPick({ lat: parseFloat(lat), lon: parseFloat(lon), display_name, address: results[0] });
-        } catch (_) {
-            setStatus('not_found');
+        } catch (error) {
+            // A CORS error caused by a 429 usually throws a TypeError in fetch
+            window._nominatimBlocked = true;
+            setStatus('rate_limited');
         }
     }, [onPick]);
 
-    // Debounce geocoding by 800 ms when address prop changes
+    // Debounce geocoding by 2000 ms when address prop changes
     useEffect(() => {
-        const timer = setTimeout(() => geocode(address), 800);
+        const timer = setTimeout(() => {
+            if (address && address.length > 5) {
+                geocode(address);
+            }
+        }, 2000);
         return () => clearTimeout(timer);
     }, [address, geocode]);
 
@@ -130,6 +147,16 @@ const AddressMap = ({ address, onPick }) => {
                     boxShadow: '0 2px 6px rgba(0,0,0,0.15)', whiteSpace: 'nowrap'
                 }}>
                     ⚠️ Location not found — try a different address
+                </div>
+            )}
+            {status === 'rate_limited' && (
+                <div style={{
+                    position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
+                    zIndex: 1000, background: 'white', padding: '4px 12px',
+                    borderRadius: 20, fontSize: 12, color: '#e53e3e',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)', whiteSpace: 'nowrap'
+                }}>
+                    ⏳ Rate limit exceeded. Please wait 5 minutes before searching.
                 </div>
             )}
 

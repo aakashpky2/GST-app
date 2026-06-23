@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import api from '../api/axios';
 
 const Layout = ({ children }) => {
     const navigate = useNavigate();
@@ -8,6 +9,7 @@ const Layout = ({ children }) => {
     const [activeDropdown, setActiveDropdown] = useState(null);
     const [activeSubMenu, setActiveSubMenu] = useState('registration');
     const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const [displayName, setDisplayName] = useState(localStorage.getItem('gst_legal_name') || 'GST USER');
 
     // All paths that use the GST portal's own nav (bd-navbar) instead of the Layout navbar
     const isDashboard = location.pathname.startsWith('/dashboard') ||
@@ -23,6 +25,25 @@ const Layout = ({ children }) => {
         location.pathname.startsWith('/state-specific-information') ||
         location.pathname.startsWith('/aadhaar-authentication') ||
         location.pathname.startsWith('/verification');
+
+    useEffect(() => {
+        if (isDashboard) {
+            const fetchUserData = async () => {
+                try {
+                    const { data } = await api.get('/auth/me');
+                    if (data?.success && data?.data) {
+                        const user = data.data;
+                        const finalName = user.company_name || user.legal_name || 'GST USER';
+                        setDisplayName(finalName);
+                        localStorage.setItem('gst_legal_name', finalName);
+                    }
+                } catch (err) {
+                    console.warn('Failed to fetch user data for layout', err);
+                }
+            };
+            fetchUserData();
+        }
+    }, [location.pathname, isDashboard]);
 
     const toggleMenu = (menu) => {
         if (activeMenu === menu) {
@@ -81,7 +102,7 @@ const Layout = ({ children }) => {
                                 onClick={(e) => { e.stopPropagation(); setShowProfileMenu(prev => !prev); }}
                             >
                                 <span className="user-icon">👤</span>
-                                <span className="user-name" style={{ fontWeight: '500', fontSize: '14px' }}>{localStorage.getItem('gst_legal_name') || 'GST USER'} ▾</span>
+                                <span className="user-name" style={{ fontWeight: '500', fontSize: '14px' }}>{displayName} ▾</span>
 
                                 {showProfileMenu && (
                                     <div
@@ -235,23 +256,23 @@ const Layout = ({ children }) => {
                 )}
                 
                 <div 
-                    className={`nav-item ${location.pathname === '/forgot-password' || location.pathname === '/services/forgotpassword' ? 'services-active-teal' : ''}`}
+                    className={`nav-item ${location.pathname === '/forgot-password' || location.pathname.startsWith('/services') ? 'services-active-teal' : ''}`}
                     onMouseEnter={() => setActiveDropdown('services')}
                     onMouseLeave={() => setActiveDropdown(null)}
                 >
-                    <button className={`nav-link-btn ${activeDropdown === 'services' ? 'active-link' : ''} ${location.pathname === '/forgot-password' || location.pathname === '/services/forgotpassword' ? 'services-active-btn' : ''}`}>
+                    <button className={`nav-link-btn ${activeDropdown === 'services' ? 'active-link' : ''} ${location.pathname === '/forgot-password' || location.pathname.startsWith('/services') ? 'services-active-btn' : ''}`}>
                         Services ▾
                     </button>
                 </div>
 
-                <a href="#" className="nav-link" onClick={() => setActiveDropdown(null)}>GST Law</a>
+                <Link to="/gst-law" className="nav-link" onClick={() => setActiveDropdown(null)}>GST Law</Link>
                 
                 <div 
-                    className="nav-item"
+                    className={`nav-item ${location.pathname.startsWith('/download') ? 'services-active-teal' : ''}`}
                     onMouseEnter={() => setActiveDropdown('downloads')}
                     onMouseLeave={() => setActiveDropdown(null)}
                 >
-                    <button className={`nav-link-btn ${activeDropdown === 'downloads' ? 'active-link' : ''}`}>
+                    <button className={`nav-link-btn ${activeDropdown === 'downloads' ? 'active-link' : ''} ${location.pathname.startsWith('/download') ? 'services-active-btn' : ''}`}>
                         Downloads ▾
                     </button>
                 </div>
@@ -288,26 +309,26 @@ const Layout = ({ children }) => {
                         {activeSubMenu === 'registration' && (
                             <div className="dropdown-sub-row">
                                 <Link to="/registration" onClick={() => setActiveDropdown(null)}>New Registration</Link>
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>Track Application Status</Link>
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>Application for Filing Clarifications</Link>
+                                <Link to="/services/registration/track-application-status" onClick={() => setActiveDropdown(null)}>Track Application Status</Link>
+                                <Link to="/registration" onClick={() => setActiveDropdown(null)}>Application for Filing Clarifications</Link>
                                 <Link to="#" onClick={() => setActiveDropdown(null)}>Home State GSK selection for Promoter/Director of specific COBs</Link>
                             </div>
                         )}
                         {activeSubMenu === 'payments' && (
                             <div className="dropdown-sub-row">
-                                <Link to="/payments/create-challan" onClick={() => setActiveDropdown(null)}>Create Challan</Link>
-                                <Link to="/payments/track-status" onClick={() => setActiveDropdown(null)}>Track Payment Status</Link>
-                                <Link to="/payments/grievance" onClick={() => setActiveDropdown(null)}>Grievance against Payment (GST PMT-07)</Link>
+                                <Link to="/payment/create-challan" onClick={() => setActiveDropdown(null)}>Create Challan</Link>
+                                <Link to="/services/payments/track-payment-status" onClick={() => setActiveDropdown(null)}>Track Payment Status</Link>
+                                <Link to="/services/payments/grievance-against-payment" onClick={() => setActiveDropdown(null)}>Grievance against Payment (GST PMT-07)</Link>
                             </div>
                         )}
                         {activeSubMenu === 'userServices' && (
                             <div className="dropdown-sub-row">
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>Search HSN Code</Link>
+                                <Link to="/services/user-services/search-hsn-code" onClick={() => setActiveDropdown(null)}>Search HSN Code</Link>
                                 <Link to="#" onClick={() => setActiveDropdown(null)}>Generate User ID for Unregistered Applicant</Link>
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>Cause List</Link>
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>Verify RFN</Link>
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>Holiday List</Link>
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>Locate GST Practitioner (GSTP)</Link>
+                                <Link to="/services/user-services/cause-list" onClick={() => setActiveDropdown(null)}>Cause List</Link>
+                                <Link to="/services/user-services/verify-rfn" onClick={() => setActiveDropdown(null)}>Verify RFN</Link>
+                                <Link to="/services/user-services/holiday-list" onClick={() => setActiveDropdown(null)}>Holiday List</Link>
+                                <Link to="/services/user-services/locate-gstp" onClick={() => setActiveDropdown(null)}>Locate GST Practitioner (GSTP)</Link>
                                 <Link to="#" onClick={() => setActiveDropdown(null)}>Search Advance Ruling</Link>
                             </div>
                         )}
@@ -332,38 +353,38 @@ const Layout = ({ children }) => {
                         {activeSubMenu !== 'gstStatistics' && (
                             <div className="dropdown-sub-row" style={{ alignItems: 'start' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Returns Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Tran-1 Offline Tools</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR3B Offline Utility</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>ITC03 Offline Tool</Link>
+                                    <Link to="/download/returns" onClick={() => setActiveDropdown(null)}>Returns Offline Tool</Link>
+                                    <Link to="/download/trans1b" onClick={() => setActiveDropdown(null)}>Tran-1 Offline Tools</Link>
+                                    <Link to="/download/gstr3b" onClick={() => setActiveDropdown(null)}>GSTR3B Offline Utility</Link>
+                                    <Link to="/download/itc03" onClick={() => setActiveDropdown(null)}>ITC03 Offline Tool</Link>
                                     <Link to="#" onClick={() => setActiveDropdown(null)}>GST ARA 01 - Application for Advance Ruling</Link>
                                     <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR 6 Offline Tool With Amendments</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR7 Offline Utility</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>SRM-I Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR10 Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-9A Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-4 Offline Tool (Annual)</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>IMS Offline Tool</Link>
+                                    <Link to="/download/gstr7" onClick={() => setActiveDropdown(null)}>GSTR7 Offline Utility</Link>
+                                    <Link to="/download/srm1" onClick={() => setActiveDropdown(null)}>SRM-I Offline Tool</Link>
+                                    <Link to="/download/gstr10" onClick={() => setActiveDropdown(null)}>GSTR10 Offline Tool</Link>
+                                    <Link to="/download/gstr9a" onClick={() => setActiveDropdown(null)}>GSTR-9A Offline Tool</Link>
+                                    <Link to="/download/gstr4x" onClick={() => setActiveDropdown(null)}>GSTR-4 Offline Tool (Annual)</Link>
+                                    <Link to="/download/ims" onClick={() => setActiveDropdown(null)}>IMS Offline Tool</Link>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Matching Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>Tran-2 Offline Tools</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>ITC01 Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>ITC04 Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-4 Offline Tool (Quarterly filing)</Link>
+                                    <Link to="/download/gstr2b" onClick={() => setActiveDropdown(null)}>Matching Offline Tool</Link>
+                                    <Link to="/download/trans2" onClick={() => setActiveDropdown(null)}>Tran-2 Offline Tools</Link>
+                                    <Link to="/download/itc01" onClick={() => setActiveDropdown(null)}>ITC01 Offline Tool</Link>
+                                    <Link to="/download/itc04" onClick={() => setActiveDropdown(null)}>ITC04 Offline Tool</Link>
+                                    <Link to="/download/gstr4/offline" onClick={() => setActiveDropdown(null)}>GSTR-4 Offline Tool (Quarterly filing)</Link>
                                     <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR 11 Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR8 Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>SRM-II Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-9 Offline Tool</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>GSTR-9C Offline Tool</Link>
+                                    <Link to="/download/gstr8" onClick={() => setActiveDropdown(null)}>GSTR8 Offline Tool</Link>
+                                    <Link to="/download/srm2" onClick={() => setActiveDropdown(null)}>SRM-II Offline Tool</Link>
+                                    <Link to="/download/gstr9" onClick={() => setActiveDropdown(null)}>GSTR-9 Offline Tool</Link>
+                                    <Link to="/download/gstr9c" onClick={() => setActiveDropdown(null)}>GSTR-9C Offline Tool</Link>
                                     <Link to="#" onClick={() => setActiveDropdown(null)}>GST DRC-22A - Application for Objection to Provisional Attachment Order</Link>
-                                    <Link to="#" onClick={() => setActiveDropdown(null)}>TDS & TCS Credit Received Offline Tool</Link>
+                                    <Link to="/download/gstr2x" onClick={() => setActiveDropdown(null)}>TDS & TCS Credit Received Offline Tool</Link>
                                 </div>
                             </div>
                         )}
                         {activeSubMenu === 'gstStatistics' && (
                             <div className="dropdown-sub-row">
-                                <Link to="#" onClick={() => setActiveDropdown(null)}>GST Statistics</Link>
+                                <Link to="/gst-statistics" onClick={() => setActiveDropdown(null)}>GST Statistics</Link>
                             </div>
                         )}
                     </div>
@@ -378,9 +399,8 @@ const Layout = ({ children }) => {
                         <div className="dropdown-main-row" style={{ background: '#fff', padding: '14px 22px', gap: '34px' }}>
                             <Link to="/search-taxpayer/gstin" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search by GSTIN/UIN</Link>
                             <Link to="/search-taxpayer/pan" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search by PAN</Link>
-                            <Link to="/search-taxpayer/migrated" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search Migrated Taxpayer</Link>
+                            <Link to="/search-taxpayer/temp-id" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search Temporary ID</Link>
                             <Link to="/search-taxpayer/composition" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search Composition Taxpayer</Link>
-                            <Link to="/search-taxpayer/cancelled" style={{ color: '#001b5c', textDecoration: 'none', fontWeight: '500' }} onClick={() => setActiveDropdown(null)}>Search Cancelled Provisional IDs</Link>
                         </div>
                     </div>
                 )}
@@ -427,7 +447,7 @@ const Layout = ({ children }) => {
                                     <li><a href="#">GST Knowledge Portal</a></li>
                                     <li><a href="#">GST Media</a></li>
                                     <li><a href="#">Site Map</a></li>
-                                    <li><a href="#">Grievance Redressal Portal</a></li>
+                                    <li><a href="#">Grievance Nodal Officers</a></li>
                                 </ul>
                             </div>
                             <div className="footer-col">
