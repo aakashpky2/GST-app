@@ -25,33 +25,29 @@ exports.login = async (req, res, next) => {
         if (error || !user) {
             console.warn(`[Login] User not found or DB error: ${username}`);
             
-            // Bypass login if Supabase project is paused
-            if (error && error.message && error.message.includes('Project paused')) {
-                console.warn('DB PAUSED: Bypassing login for user:', username);
-                
-                // Return a simulated demo user
-                const demoUser = {
-                    id: 'demo-id-123',
-                    username: username,
-                    email: username + '@example.com',
-                    user_type: 'Taxpayer',
-                    legal_name: 'Demo Self-Learning User',
-                    isSimulated: true
-                };
-
-                const token = jwt.sign({ id: demoUser.id }, process.env.JWT_SECRET || 'secret', {
-                    expiresIn: '30d'
-                });
-
-                return res.status(200).json({
-                    success: true,
-                    token,
-                    user: demoUser,
-                    message: 'Login Successful (Simulation Mode - Supabase Paused)'
-                });
-            }
+            // Bypass login if user not found or DB paused (Simulation Mode)
+            console.warn('Simulation Mode: Bypassing login for user:', username);
             
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            // Return a simulated demo user
+            const demoUser = {
+                id: 'demo-id-123',
+                username: username,
+                email: username + '@example.com',
+                user_type: 'Taxpayer',
+                legal_name: 'Demo Self-Learning User',
+                isSimulated: true
+            };
+
+            const token = jwt.sign({ id: demoUser.id }, process.env.JWT_SECRET || 'secret', {
+                expiresIn: '30d'
+            });
+
+            return res.status(200).json({
+                success: true,
+                token,
+                user: demoUser,
+                message: 'Login Successful (Simulation Mode)'
+            });
         }
 
         console.log(`[Login] User found: ${user.username}. Comparing passwords...`);
@@ -91,6 +87,13 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
     try {
+        if (req.user && req.user.isSimulated) {
+            return res.status(200).json({
+                success: true,
+                data: req.user
+            });
+        }
+
         const { data: user, error } = await supabase
             .from('users')
             .select('*')

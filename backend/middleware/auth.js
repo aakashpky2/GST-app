@@ -19,6 +19,12 @@ exports.protect = async (req, res, next) => {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+        // Handle Simulation Mode user
+        if (decoded.id === 'demo-id-123') {
+            req.user = { id: 'demo-id-123', username: 'Simulation User', isSimulated: true };
+            return next();
+        }
+
         const { data: user, error } = await supabase
             .from('users')
             .select('id, email, username')

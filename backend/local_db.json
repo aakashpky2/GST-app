@@ -1225,5 +1225,134 @@
       "designation": "Proprietor",
       "verified": true
     }
+  },
+  "aswathy165c": {
+    "GSTR1_B2B_Invoices": {
+      "invoices": [
+        {
+          "recipientGSTIN": "2345678",
+          "recipientName": "retyuio",
+          "nameAsInMaster": "",
+          "invoiceNo": "34567890",
+          "invoiceDate": "04/06/2026",
+          "totalInvoiceValue": "980976867",
+          "pos": "32-Kerala",
+          "isDeemedExport": false,
+          "isSEZWithPayment": true,
+          "isSEZWithoutPayment": false,
+          "isReverseCharge": false,
+          "isIntraStateIGST": false,
+          "isDifferentialPercentage": false,
+          "supplyType": "Intra-State",
+          "itemDetails": [
+            {
+              "rate": "0%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "0.1%",
+              "taxableValue": "5467",
+              "integratedTax": "",
+              "centralTax": "2.73",
+              "stateTax": "2.73",
+              "cess": ""
+            },
+            {
+              "rate": "0.25%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "1%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "1.5%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "3%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "5%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "6%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "7.5%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "12%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "18%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "28%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "40%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            }
+          ],
+          "id": 1782280744284
+        }
+      ]
+    }
   }
 }

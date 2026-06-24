@@ -67,10 +67,26 @@ const GSTR1B2CLDashboard = () => {
 
             {/* Main Content Area */}
             <div className="gstr1-main-content b2cl-main-content">
+                {/* Info Block */}
+                <div className="gstr1-info-block" style={{ marginBottom: '20px' }}>
+                    <div className="info-column">
+                        <p><span>GSTIN</span> - 32AAICD8127A1Z4</p>
+                        <p><span>FY</span> - 2025-26</p>
+                    </div>
+                    <div className="info-column">
+                        <p><span>Legal Name</span> - D MIX MEDIA PRIVATE LIMITED</p>
+                        <p><span>Tax Period</span> - March</p>
+                    </div>
+                    <div className="info-column">
+                        <p><span>Trade Name</span> -</p>
+                        <p><span>Status</span> - Not Filed</p>
+                    </div>
+                </div>
+
                 {/* Cyan Header Banner */}
                 <div className="b2cl-header-banner">
                     <div className="b2cl-header-top">
-                        <h2 className="b2cl-title">5 - B2C (Large) Invoices</h2>
+                        <h2 className="b2cl-title">5A, 5B - B2C (Large) Invoices</h2>
                         <div className="gstr1-header-actions">
                             <button className="gstr1-btn-secondary">HELP <span style={{ fontSize: '12px', border: '1px solid #fff', borderRadius: '50%', padding: '0 4px', marginLeft: '4px' }}>?</span></button>
                             <button className="gstr1-btn-icon" onClick={handleRefresh}>↻</button>

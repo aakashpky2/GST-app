@@ -48,6 +48,9 @@ const Layout = ({ children }) => {
                     }
                 } catch (err) {
                     console.warn('Failed to fetch user data for layout', err);
+                    if (err.response && err.response.status === 401) {
+                        handleLogout();
+                    }
                 }
             };
             fetchUserData();

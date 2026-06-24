@@ -236,7 +236,7 @@ const GSTR1Dashboard = () => {
 
     const recordCards = [
         "4A, 4B, 6B, 6C - B2B, SEZ, DE Invoices",
-        "5 - B2C (Large) Invoices",
+        "5A, 5B - B2C (Large) Invoices",
         "6A - Exports Invoices",
         "7 - B2C (Others)",
         "8A, 8B, 8C, 8D - Nil Rated Supplies",
