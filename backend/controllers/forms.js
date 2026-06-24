@@ -706,32 +706,69 @@ exports.saveTab = async (req, res) => {
             const records = Array.isArray(data.records) ? data.records : [];
             const tabType = tabName.replace('GSTR1_SUP95_', '');
             for (const rec of records) {
-                const mappedData = {
-                    trn,
-                    tab_type: tabType,
-                    supplier_gstin: rec.supplierGstin,
-                    supplier_name: rec.supplierName,
-                    pos: rec.pos,
-                    supply_type: rec.supplyType,
-                    taxable_value: parseFloat(rec.taxableValue) || 0,
-                    rate: rec.rate,
-                    recipient_gstin: rec.recipientGstin,
-                    recipient_name: rec.recipientName,
-                    document_number: rec.documentNumber,
-                    document_date: rec.documentDate,
-                    total_value: parseFloat(rec.totalValue) || 0,
-                    is_deemed_exports: rec.deemedExports || false,
-                    is_sez_with_payment: rec.sezWithPayment || false,
-                    is_sez_without_payment: rec.sezWithoutPayment || false,
-                    updated_at: new Date().toISOString()
-                };
+                // For B2B types (R2R, NR2R) the frontend sends itemDetails array
+                if (rec.itemDetails && Array.isArray(rec.itemDetails)) {
+                    for (const item of rec.itemDetails) {
+                        // Skip rows with no taxable value
+                        if (!item.taxableValue) continue;
 
-                const { error: supErr } = await supabase
-                    .from('gstr1_sup95')
-                    .upsert(mappedData, { onConflict: 'trn, tab_type, document_number, pos, rate, supplier_gstin, recipient_gstin' });
+                        const mappedData = {
+                            trn,
+                            tab_type: tabType,
+                            supplier_gstin: rec.supplierGstin,
+                            supplier_name: rec.supplierName,
+                            pos: rec.pos,
+                            supply_type: rec.supplyType,
+                            taxable_value: parseFloat(item.taxableValue) || 0,
+                            rate: item.rate,
+                            recipient_gstin: rec.recipientGstin,
+                            recipient_name: rec.recipientName,
+                            document_number: rec.documentNumber,
+                            document_date: rec.documentDate,
+                            total_value: parseFloat(rec.totalValue) || 0,
+                            is_deemed_exports: rec.deemedExports || false,
+                            is_sez_with_payment: rec.sezWithPayment || false,
+                            is_sez_without_payment: rec.sezWithoutPayment || false,
+                            updated_at: new Date().toISOString()
+                        };
 
-                if (supErr) {
-                    console.warn(`Note: Could not save Sup95 record to structured table.`, supErr.message);
+                        const { error: supErr } = await supabase
+                            .from('gstr1_sup95')
+                            .upsert(mappedData, { onConflict: 'trn, tab_type, document_number, pos, rate, supplier_gstin, recipient_gstin' });
+
+                        if (supErr) {
+                            console.warn(`Note: Could not save Sup95 B2B record to structured table.`, supErr.message);
+                        }
+                    }
+                } else {
+                    // For B2C types (R2NR, NR2NR) the frontend sends rate and taxableValue directly
+                    const mappedData = {
+                        trn,
+                        tab_type: tabType,
+                        supplier_gstin: rec.supplierGstin,
+                        supplier_name: rec.supplierName,
+                        pos: rec.pos,
+                        supply_type: rec.supplyType,
+                        taxable_value: parseFloat(rec.taxableValue) || 0,
+                        rate: rec.rate,
+                        recipient_gstin: rec.recipientGstin,
+                        recipient_name: rec.recipientName,
+                        document_number: rec.documentNumber,
+                        document_date: rec.documentDate,
+                        total_value: parseFloat(rec.totalValue) || 0,
+                        is_deemed_exports: rec.deemedExports || false,
+                        is_sez_with_payment: rec.sezWithPayment || false,
+                        is_sez_without_payment: rec.sezWithoutPayment || false,
+                        updated_at: new Date().toISOString()
+                    };
+
+                    const { error: supErr } = await supabase
+                        .from('gstr1_sup95')
+                        .upsert(mappedData, { onConflict: 'trn, tab_type, document_number, pos, rate, supplier_gstin, recipient_gstin' });
+
+                    if (supErr) {
+                        console.warn(`Note: Could not save Sup95 B2C record to structured table.`, supErr.message);
+                    }
                 }
             }
         }
