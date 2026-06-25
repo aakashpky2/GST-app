@@ -38,19 +38,20 @@ const GSTR1DocumentsIssued = () => {
         setIsLoading(true);
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_Docs_Issued`);
+            const res = await gstr1Service.getGstr1Records('gstr1_docs_issued', trn);
 
-            if (res.data.success && res.data.data) {
-                // Backend returns { documents: [...] }
-                const docs = res.data.data.documents || [];
-                const grouped = {};
-                docs.forEach(doc => {
-                    if (!grouped[doc.category]) grouped[doc.category] = [];
-                    grouped[doc.category].push(doc);
-                });
-                setDocRecords(grouped);
-            }
-        } catch (error) {
+                if (res.success && res.data) {
+                    const docs = res.data || [];
+                    const grouped = {};
+                    docs.forEach(doc => {
+                        if (!grouped[doc.category]) grouped[doc.category] = [];
+                        grouped[doc.category].push(doc);
+                    });
+                    setDocRecords(grouped);
+                } else {
+                    setDocRecords({});
+                }
+            } catch (error) {
             console.error("Failed to fetch documents issued records");
         } finally {
             setIsLoading(false);

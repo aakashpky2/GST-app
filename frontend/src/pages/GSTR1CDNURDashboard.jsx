@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1CDNRDashboard.css'; // Reusing similar styles
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 
 const GSTR1CDNURDashboard = () => {
     const navigate = useNavigate();
@@ -13,11 +14,12 @@ const GSTR1CDNURDashboard = () => {
         const fetchInvoices = async () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await api.get(`/forms/tab/${trn}/GSTR1_CDNUR_Invoices`);
+                const res = await gstr1Service.getGstr1Records('gstr1_cdnur_invoices', trn);
 
-                if (res.data.success && res.data.data) {
-                    const invs = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-                    setInvoices(invs);
+                if (res.success && res.data) {
+                    setInvoices(res.data);
+                } else {
+                    setInvoices([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch CDNUR invoices");

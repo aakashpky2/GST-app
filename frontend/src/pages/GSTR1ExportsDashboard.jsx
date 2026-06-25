@@ -4,6 +4,7 @@ import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1Dashboard.css'; // Reusing info block and basic styles
 import './GSTR1ExportsDashboard.css'; // Exports specific styles
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import PageLoader from '../components/PageLoader';
 
 const GSTR1ExportsDashboard = () => {
@@ -25,11 +26,12 @@ const GSTR1ExportsDashboard = () => {
         const fetchInvoices = async () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await api.get(`/forms/tab/${trn}/GSTR1_Exports_Invoices`);
+                const res = await gstr1Service.getGstr1Records('gstr1_exports_invoices', trn);
 
-                if (res.data.success && res.data.data) {
-                    const invs = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-                    setInvoices(invs);
+                if (res.success && res.data) {
+                    setInvoices(res.data);
+                } else {
+                    setInvoices([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch exports invoices");

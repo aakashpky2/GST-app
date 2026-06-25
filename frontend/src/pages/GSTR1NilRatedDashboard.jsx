@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1Dashboard.css'; // Reusing info block and basic styles
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import PageLoader from '../components/PageLoader';
 
 const GSTR1NilRatedDashboard = () => {
@@ -23,11 +24,12 @@ const GSTR1NilRatedDashboard = () => {
         const fetchInvoices = async () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await api.get(`/forms/tab/${trn}/GSTR1_NilRated_Supplies`);
+                const res = await gstr1Service.getGstr1Records('gstr1_nil_rated_supplies', trn);
 
-                if (res.data.success && res.data.data) {
-                    const invs = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-                    setInvoices(invs);
+                if (res.success && res.data) {
+                    setInvoices(res.data);
+                } else {
+                    setInvoices([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch Nil Rated supplies");

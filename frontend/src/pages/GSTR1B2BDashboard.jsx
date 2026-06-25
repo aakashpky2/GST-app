@@ -4,6 +4,7 @@ import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1Dashboard.css'; // Reusing info block and basic styles
 import './GSTR1B2BDashboard.css'; // Specific styles for this page
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import { Toaster } from 'react-hot-toast';
 import PageLoader from '../components/PageLoader';
 
@@ -25,14 +26,12 @@ const GSTR1B2BDashboard = () => {
         const fetchInvoices = async () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await api.get(`/forms/tab/${trn}/GSTR1_B2B_Invoices`);
+                const res = await gstr1Service.getGstr1Records('gstr1_b2b_invoices', trn);
 
-                if (res.data.success && res.data.data) {
-                    if (Array.isArray(res.data.data.invoices)) {
-                        setInvoices(res.data.data.invoices);
-                    } else if (Array.isArray(res.data.data)) {
-                        setInvoices(res.data.data);
-                    }
+                if (res.success && res.data) {
+                    setInvoices(res.data);
+                } else {
+                    setInvoices([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch invoices");

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1CDNRDashboard.css'; // Reusing layout styles
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 
 const GSTR1AdvTaxDashboard = () => {
     const navigate = useNavigate();
@@ -13,11 +14,12 @@ const GSTR1AdvTaxDashboard = () => {
         const fetchRecords = async () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await api.get(`/forms/tab/${trn}/GSTR1_AdvTax_Invoices`);
+                const res = await gstr1Service.getGstr1Records('gstr1_adv_tax', trn);
 
-                if (res.data.success && res.data.data) {
-                    const data = res.data.data.records || (Array.isArray(res.data.data) ? res.data.data : []);
-                    setRecords(data);
+                if (res.success && res.data) {
+                    setRecords(res.data);
+                } else {
+                    setRecords([]);
                 }
             } catch (error) {
                 console.error("Failed to fetch Advance Tax records");

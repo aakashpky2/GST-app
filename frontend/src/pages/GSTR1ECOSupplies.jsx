@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1ECOSupplies.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast from 'react-hot-toast';
 
 const GSTR1ECOSupplies = () => {
@@ -21,15 +22,14 @@ const GSTR1ECOSupplies = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
             const tabName = activeTab === 'TCS' ? 'GSTR1_ECO_TCS' : 'GSTR1_ECO_PAY';
-            const res = await api.get(`/forms/tab/${trn}/${tabName}`);
+            const res = await gstr1Service.getGstr1Records('gstr1_eco', trn);
 
-            if (res.data.success && res.data.data) {
-                const data = res.data.data.records || (Array.isArray(res.data.data) ? res.data.data : []);
-                setRecords(data);
-            } else {
-                setRecords([]);
-            }
-        } catch (error) {
+                if (res.success && res.data) {
+                    setRecords(res.data);
+                } else {
+                    setRecords([]);
+                }
+            } catch (error) {
             console.error("Failed to fetch ECO records");
         } finally {
             setIsLoading(false);

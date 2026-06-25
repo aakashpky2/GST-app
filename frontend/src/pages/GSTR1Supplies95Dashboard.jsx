@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1Supplies95Dashboard.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast from 'react-hot-toast';
 
 const GSTR1Supplies95Dashboard = () => {
@@ -27,15 +28,14 @@ const GSTR1Supplies95Dashboard = () => {
         setIsLoading(true);
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_SUP95_${activeTab}`);
+            const res = await gstr1Service.getGstr1Records('gstr1_sup95', trn);
 
-            if (res.data.success && res.data.data) {
-                const data = res.data.data.records || (Array.isArray(res.data.data) ? res.data.data : []);
-                setRecords(data);
-            } else {
-                setRecords([]);
-            }
-        } catch (error) {
+                if (res.success && res.data) {
+                    setRecords(res.data);
+                } else {
+                    setRecords([]);
+                }
+            } catch (error) {
             console.error("Failed to fetch 9(5) records");
         } finally {
             setIsLoading(false);

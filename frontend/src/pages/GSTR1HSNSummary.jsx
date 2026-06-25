@@ -40,15 +40,14 @@ const GSTR1HSNSummary = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
             const tabName = activeTab === 'B2B' ? 'GSTR1_HSN_B2B' : 'GSTR1_HSN_B2C';
-            const res = await api.get(`/forms/tab/${trn}/${tabName}`);
+            const res = await gstr1Service.getGstr1Records('gstr1_hsn_summary', trn);
 
-            if (res.data.success && res.data.data) {
-                const data = res.data.data.records || (Array.isArray(res.data.data) ? res.data.data : []);
-                setRecords(data);
-            } else {
-                setRecords([]);
-            }
-        } catch (error) {
+                if (res.success && res.data) {
+                    setHsnRecords(res.data);
+                } else {
+                    setHsnRecords([]);
+                }
+            } catch (error) {
             console.error("Failed to fetch HSN records");
         } finally {
             setIsLoading(false);
