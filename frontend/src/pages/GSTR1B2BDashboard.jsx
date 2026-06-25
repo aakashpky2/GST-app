@@ -14,33 +14,28 @@ const GSTR1B2BDashboard = () => {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const handleRefresh = () => {
+    const fetchB2BInvoices = async () => {
         setLoading(true);
-        document.body.style.overflow = "hidden";
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        try {
+            const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+            const res = await gstr1Service.getGstr1Records('gstr1_b2b_invoices', trn);
+            if (res.success && res.data) {
+                setInvoices(res.data);
+            } else {
+                setInvoices([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch B2B invoices');
+            setInvoices([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
-        const fetchInvoices = async () => {
-            try {
-                const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await gstr1Service.getGstr1Records('gstr1_b2b_invoices', trn);
-
-                if (res.success && res.data) {
-                    setInvoices(res.data);
-                } else {
-                    setInvoices([]);
-                }
-            } catch (error) {
-                console.error("Failed to fetch invoices");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInvoices();
+        fetchB2BInvoices();
     }, []);
+
 
     const handleBackdropClick = () => {
         setActiveMenu(null);
@@ -91,7 +86,7 @@ const GSTR1B2BDashboard = () => {
                         <h2 className="b2b-title">4A, 4B, 6B, 6C - B2B, SEZ, DE Invoices</h2>
                         <div className="gstr1-header-actions">
                             <button className="gstr1-btn-secondary">HELP <span style={{ fontSize: '12px', border: '1px solid #fff', borderRadius: '50%', padding: '0 4px', marginLeft: '4px' }}>?</span></button>
-                            <button className="gstr1-btn-icon" onClick={handleRefresh}>↻</button>
+                            <button className="gstr1-btn-icon" onClick={fetchB2BInvoices}>↻</button>
                         </div>
                     </div>
 
@@ -103,10 +98,6 @@ const GSTR1B2BDashboard = () => {
                 {/* Dynamic Records Box */}
                 {loading ? (
                     <div className="b2b-empty-records" style={{ textAlign: 'center' }}>Loading...</div>
-                ) : invoices.length === 0 ? (
-                    <div className="b2b-empty-records">
-                        There are no records to be displayed.
-                    </div>
                 ) : (
                     <div className="b2b-records-table-container">
                         <table className="b2b-records-table">
@@ -120,24 +111,27 @@ const GSTR1B2BDashboard = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {invoices.map((inv, idx) => {
-                                    const items = inv.itemDetails || [];
-                                    const totalTaxable = items.reduce((sum, item) => sum + (parseFloat(item.taxableValue) || 0), 0).toFixed(2);
-                                    
-                                    return (
+                                {invoices.length > 0 ? (
+                                    invoices.map((inv, idx) => (
                                         <tr key={inv.id || idx}>
-                                            <td>{inv.recipientGSTIN}</td>
-                                            <td>{inv.recipientName || 'Name not provided'}</td>
-                                            <td>{inv.invoiceNo}</td>
-                                            <td>{inv.invoiceDate}</td>
-                                            <td>{inv.totalInvoiceValue}</td>
+                                            <td>{inv.recipient_gstin}</td>
+                                            <td>{inv.recipient_name || '-'}</td>
+                                            <td>{inv.invoice_no}</td>
+                                            <td>{inv.invoice_date}</td>
+                                            <td>{inv.total_invoice_value}</td>
                                         </tr>
-                                    );
-                                })}
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5">No records found</td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 )}
+                    
+
 
                 {/* Bottom Actions */}
                 <div className="b2b-actions-row">
