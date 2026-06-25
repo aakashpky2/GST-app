@@ -1,4 +1,6 @@
 const supabase = require('../config/supabase');
+const gstr2aService = require('../services/gstr2aService');
+const gstr2bService = require('../services/gstr2bService');
 const fs = require('fs');
 const path = require('path');
 const LOCAL_DB_PATH = path.join(__dirname, '../local_db.json');
@@ -393,6 +395,10 @@ exports.saveTab = async (req, res) => {
                     console.warn(`Note: Could not save invoice ${inv.invoiceNo} to structured table.`, invErr.message);
                 }
             }
+            // Auto-generate GSTR-2A (live, dynamic) from GSTR-1
+            gstr2aService.generateGSTR2AFromGSTR1(invoices, 'GSTR1_B2B_Invoices', trn).catch(err => console.error('[GSTR2A] B2B:', err));
+            // Also keep legacy GSTR-2B direct sync
+            gstr2bService.generateGSTR2BFromGSTR1(invoices, 'GSTR1_B2B_Invoices', trn).catch(err => console.error(err));
         }
 
         if (tabName === 'GSTR1_B2CL_Invoices') {
@@ -449,8 +455,9 @@ exports.saveTab = async (req, res) => {
 
         if (tabName === 'GSTR1_B2CS_Invoices') {
             const invoices = Array.isArray(data.invoices) ? data.invoices : [];
-            // B2CS usually doesn't have unique invoice numbers in this simplified app, 
-            // but we'll store them for the TRN.
+            // B2CS doesn't have unique invoice numbers, so delete existing and re-insert
+            await supabase.from('gstr1_b2cs_invoices').delete().eq('trn', trn);
+
             for (const inv of invoices) {
                 const mappedData = {
                     trn,
@@ -528,6 +535,10 @@ exports.saveTab = async (req, res) => {
                     console.warn(`Note: Could not save CDNR invoice ${inv.noteNumber} to structured table.`, invErr.message);
                 }
             }
+            // Auto-generate GSTR-2A (live, dynamic) from GSTR-1
+            gstr2aService.generateGSTR2AFromGSTR1(invoices, 'GSTR1_CDNR_Invoices', trn).catch(err => console.error('[GSTR2A] CDNR:', err));
+            // Also keep legacy GSTR-2B direct sync
+            gstr2bService.generateGSTR2BFromGSTR1(invoices, 'GSTR1_CDNR_Invoices', trn).catch(err => console.error(err));
         }
 
         if (tabName === 'GSTR1_CDNUR_Invoices') {
@@ -770,6 +781,28 @@ exports.saveTab = async (req, res) => {
                         console.warn(`Note: Could not save Sup95 B2C record to structured table.`, supErr.message);
                     }
                 }
+            }
+        }
+
+        // ── GSTR-2A Auto-generation for Amended B2B (B2BA) ──────────────────────
+        if (tabName === 'GSTR1_B2B_AmendmentSummary' || tabName === 'GSTR1_B2BA_Invoices') {
+            const invoices = Array.isArray(data.invoices) ? data.invoices : (Array.isArray(data.records) ? data.records : []);
+            if (invoices.length > 0) {
+                gstr2aService.generateGSTR2AFromGSTR1(invoices, 'GSTR1_B2BA_Invoices', trn)
+                    .catch(err => console.error('[GSTR2A] B2BA:', err.message));
+                gstr2bService.generateGSTR2BFromGSTR1(invoices, 'GSTR1_B2BA_Invoices', trn)
+                    .catch(err => console.error('[GSTR2B] B2BA:', err.message));
+            }
+        }
+
+        // ── GSTR-2A Auto-generation for Amended CDNR (CDNRA) ───────────────────
+        if (tabName === 'GSTR1_CDNR_AmendmentSummary' || tabName === 'GSTR1_CDNRA_Invoices') {
+            const invoices = Array.isArray(data.invoices) ? data.invoices : (Array.isArray(data.records) ? data.records : []);
+            if (invoices.length > 0) {
+                gstr2aService.generateGSTR2AFromGSTR1(invoices, 'GSTR1_CDNRA_Invoices', trn)
+                    .catch(err => console.error('[GSTR2A] CDNRA:', err.message));
+                gstr2bService.generateGSTR2BFromGSTR1(invoices, 'GSTR1_CDNRA_Invoices', trn)
+                    .catch(err => console.error('[GSTR2B] CDNRA:', err.message));
             }
         }
 

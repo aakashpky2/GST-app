@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1NilRatedAddInvoice.css'; // Specific styles for this page
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 
 const GSTR1NilRatedAddInvoice = () => {
@@ -45,18 +46,19 @@ const GSTR1NilRatedAddInvoice = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
 
-            const saveRes = await api.post('/forms/save-tab', {
-                trn,
-                tabName: 'GSTR1_NilRated_Supplies',
-                data: { invoices: rows }
-            });
+            await Promise.all(rows.map(async (row) => {
+                const payload = {
+                    trn,
+                    description: row.description,
+                    nil_rated_amt: parseFloat(row.nilRated) || 0,
+                    exempted_amt: parseFloat(row.exempted) || 0,
+                    non_gst_amt: parseFloat(row.nonGst) || 0
+                };
+                return gstr1Service.saveGstr1Record('gstr1_nil_rated_supplies', payload);
+            }));
 
-            if (saveRes.data.success) {
-                toast.success('Nil Rated Supplies saved successfully!');
-                navigate('/returns/gstr1');
-            } else {
-                toast.error('Failed to save record');
-            }
+            toast.success('Nil Rated Supplies saved successfully!');
+            navigate('/returns/gstr1');
         } catch (err) {
             toast.error('Error saving: ' + err.message);
         } finally {

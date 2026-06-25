@@ -92,12 +92,6 @@ const Layout = ({ children }) => {
             <header className="main-header">
                 <div className="header-left">
                     <Link to="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
-                        <img
-                            src="/logo.png"
-                            alt="Ashoka Emblem"
-                            className="ashoka-logo-main"
-                            style={{ height: '65px', filter: 'brightness(0) invert(1)' }}
-                        />
                         <div className="brand-titles" style={{ marginLeft: '15px' }}>
                             <h1 style={{ color: 'white', fontSize: '24px', margin: 0, fontWeight: '500' }}>Goods and Services Tax</h1>
                             <p style={{ color: '#cbd5e0', fontSize: '14px', margin: 0 }}>Government of India, States and Union Territories</p>
@@ -113,8 +107,7 @@ const Layout = ({ children }) => {
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', position: 'relative' }}
                                 onClick={(e) => { e.stopPropagation(); setShowProfileMenu(prev => !prev); }}
                             >
-                                <span className="user-icon">👤</span>
-                                <span className="user-name" style={{ fontWeight: '500', fontSize: '14px' }}>{displayName} ▾</span>
+                                <span className="user-name" style={{ fontWeight: '500', fontSize: '14px' }}>{displayName}</span>
 
                                 {showProfileMenu && (
                                     <div
@@ -145,7 +138,7 @@ const Layout = ({ children }) => {
                                                     onClick={() => { setShowProfileMenu(false); navigate('/my-profile'); }}
                                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 15px', cursor: 'pointer', fontSize: '13px', color: '#1a237e', fontWeight: '500' }}
                                                 >
-                                                    <span>👤</span> My Profile
+                                                    My Profile
                                                 </button>
                                             </li>
                                             <li style={{ borderBottom: '1px solid #eee' }}>
@@ -153,14 +146,14 @@ const Layout = ({ children }) => {
                                                     onClick={() => { setShowProfileMenu(false); navigate('/change-password'); }}
                                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 15px', cursor: 'pointer', fontSize: '13px', color: '#1a237e', fontWeight: '500' }}
                                                 >
-                                                    <span>🔒</span> Change Password
+                                                    Change Password
                                                 </button>
                                             </li>
                                             <li style={{ borderBottom: '1px solid #eee' }}>
                                                 <button
                                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 15px', cursor: 'pointer', fontSize: '13px', color: '#1a237e', fontWeight: '500' }}
                                                 >
-                                                    <span>✅</span> Register / Update DSC
+                                                    Register / Update DSC
                                                 </button>
                                             </li>
                                             <li>
@@ -168,7 +161,7 @@ const Layout = ({ children }) => {
                                                     onClick={() => { setShowProfileMenu(false); handleLogout(); }}
                                                     style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', background: 'none', border: 'none', padding: '12px 15px', cursor: 'pointer', fontSize: '13px', color: '#1a237e', fontWeight: '500' }}
                                                 >
-                                                    <span>🚪</span> Logout
+                                                    Logout
                                                 </button>
                                             </li>
                                         </ul>
@@ -176,24 +169,7 @@ const Layout = ({ children }) => {
                                 )}
                             </div>
 
-                            <div className="notifications-icon" style={{ position: 'relative', cursor: 'pointer' }}>
-                                <span style={{ fontSize: '18px' }}>🔔</span>
-                                <span style={{
-                                    position: 'absolute',
-                                    top: '-4px',
-                                    right: '-8px',
-                                    backgroundColor: '#00bcd4',
-                                    color: 'white',
-                                    borderRadius: '50%',
-                                    width: '18px',
-                                    height: '18px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    fontSize: '11px',
-                                    fontWeight: 'bold'
-                                }}>0</span>
-                            </div>
+
                         </div>
                     ) : (
                         <>

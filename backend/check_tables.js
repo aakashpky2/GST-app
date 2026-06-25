@@ -25,7 +25,11 @@ const tables = [
     'gstr1_docs_issued',
     'gstr1_eco_supplies',
     'gstr1_sup95',
-    'forgot_otps'
+    'forgot_otps',
+    'gstr2b_b2b_invoices',
+    'gstr2b_credit_debit_notes',
+    'gstr2b_amended_b2b_invoices',
+    'gstr2b_amended_credit_debit_notes'
 ];
 
 async function checkAllTables() {

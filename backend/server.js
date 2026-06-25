@@ -41,6 +41,9 @@ const gstpRoutes = require('./routes/gstp');
 const gstLawRoutes = require('./routes/gstLaw');
 const gstStatisticsRoutes = require('./routes/gstStatistics');
 const searchTaxpayerRoutes = require('./routes/searchTaxpayer');
+const gstr2bRoutes = require('./routes/gstr2b');
+const gstr2aRoutes = require('./routes/gstr2a');
+const gstr1Routes = require('./routes/gstr1');
 
 // Mount routers
 app.use('/api/auth', authRoutes);
@@ -56,6 +59,9 @@ app.use('/api/gstp', gstpRoutes);
 app.use('/api/gst-law', gstLawRoutes);
 app.use('/api/gst-statistics', gstStatisticsRoutes);
 app.use('/api/search-taxpayer', searchTaxpayerRoutes);
+app.use('/api/gstr2b', gstr2bRoutes);
+app.use('/api/gstr2a', gstr2aRoutes);
+app.use('/api/gstr1', gstr1Routes);
 
 const PORT = process.env.PORT || 5000;
 

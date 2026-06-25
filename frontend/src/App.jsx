@@ -231,8 +231,9 @@ function App() {
           <Route path="/returns/gstr1/b2b" element={<GSTR1B2BDashboard />} />
           <Route path="/returns/gstr1/b2b/add" element={<GSTR1B2BAddInvoice />} />
           <Route path="/returns/auth/gstr1/b2b/amendment/summary" element={<GSTR1B2BAmendmentSummary />} />
-          <Route path="/returns/gstr1/b2cl" element={<GSTR1B2CLDashboard />} />
-          <Route path="/returns/gstr1/b2cl/add" element={<GSTR1B2CLAddInvoice />} />
+          <Route path="/returns/auth/gstr1/b2cl/summary" element={<GSTR1B2CLDashboard />} />
+          <Route path="/returns/gstr1/b2cl" element={<Navigate to="/returns/auth/gstr1/b2cl/summary" replace />} />
+          <Route path="/returns/auth/gstr1/b2cl/add" element={<GSTR1B2CLAddInvoice />} />
           <Route path="/returns/auth/gstr1/b2cl/amendment/summary" element={<GSTR1B2CLAmendmentSummary />} />
           <Route path="/returns/gstr1/exports" element={<GSTR1ExportsDashboard />} />
           <Route path="/returns/gstr1/exports/add" element={<GSTR1ExportsAddInvoice />} />

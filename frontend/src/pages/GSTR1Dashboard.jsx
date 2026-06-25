@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1Dashboard.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast from 'react-hot-toast';
 import PageLoader from '../components/PageLoader';
 
@@ -67,118 +68,26 @@ const GSTR1Dashboard = () => {
     const fetchGstr1Data = async () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+            
+            const countRes = await gstr1Service.getGstr1Counts(trn);
+            const c = countRes.data || {};
 
-            // B2B count
-            const resB2b = await api.get(`/forms/tab/${trn}/GSTR1_B2B_Invoices`);
-            if (resB2b.data.success && resB2b.data.data) {
-                const invs = resB2b.data.data.invoices || resB2b.data.data;
-                setB2bCount(Array.isArray(invs) ? invs.length : 0);
-            }
+            setB2bCount(c.b2b || 0);
+            setB2clCount(c.b2cl || 0);
+            setExportsCount(c.exports || 0);
+            setB2csCount(c.b2cs || 0);
+            setNilRatedCount(c.nilRated || 0);
+            setCdnrCount(c.cdnr || 0);
+            setCdnurCount(c.cdnur || 0);
+            setAdvTaxCount(c.advTax || 0);
+            setAdjAdvancesCount(c.adjAdvances || 0);
+            setHsnCount(c.hsn || 0);
+            setDocsCount(c.documents || 0);
+            setEcoCount(c.eco || 0);
+            setSup95Count(c.sup95 || 0);
 
-            // B2CL count
-            const resB2cl = await api.get(`/forms/tab/${trn}/GSTR1_B2CL_Invoices`);
-            if (resB2cl.data.success && resB2cl.data.data) {
-                const invs = resB2cl.data.data.invoices || resB2cl.data.data;
-                setB2clCount(Array.isArray(invs) ? invs.length : 0);
-            }
-
-            // Exports count
-            const resExp = await api.get(`/forms/tab/${trn}/GSTR1_Exports_Invoices`);
-            if (resExp.data.success && resExp.data.data) {
-                const invs = resExp.data.data.invoices || resExp.data.data;
-                setExportsCount(Array.isArray(invs) ? invs.length : 0);
-            }
-
-            // B2CS count
-            const resB2cs = await api.get(`/forms/tab/${trn}/GSTR1_B2CS_Invoices`);
-            if (resB2cs.data.success && resB2cs.data.data) {
-                const invs = resB2cs.data.data.invoices || resB2cs.data.data;
-                setB2csCount(Array.isArray(invs) ? invs.length : 0);
-            }
-
-            // Nil Rated count
-            const resNil = await api.get(`/forms/tab/${trn}/GSTR1_NilRated_Supplies`);
-            if (resNil.data.success && resNil.data.data) {
-                const invs = resNil.data.data.invoices || resNil.data.data;
-                setNilRatedCount(Array.isArray(invs) ? invs.length : 0);
-            }
-
-            // CDNR count
-            const resCdnr = await api.get(`/forms/tab/${trn}/GSTR1_CDNR_Invoices`);
-            if (resCdnr.data.success && resCdnr.data.data) {
-                const invs = resCdnr.data.data.invoices || resCdnr.data.data;
-                setCdnrCount(Array.isArray(invs) ? invs.length : 0);
-            }
-
-            // CDNUR count
-            const resCdnur = await api.get(`/forms/tab/${trn}/GSTR1_CDNUR_Invoices`);
-            if (resCdnur.data.success && resCdnur.data.data) {
-                const invs = resCdnur.data.data.invoices || resCdnur.data.data;
-                setCdnurCount(Array.isArray(invs) ? invs.length : 0);
-            }
-
-            // Adv Tax count
-            const resAdvTax = await api.get(`/forms/tab/${trn}/GSTR1_AdvTax_Invoices`);
-            if (resAdvTax.data.success && resAdvTax.data.data) {
-                const records = resAdvTax.data.data.records || resAdvTax.data.data;
-                setAdvTaxCount(Array.isArray(records) ? records.length : 0);
-            }
-
-            // Adj Advances count
-            const resAdjAdvances = await api.get(`/forms/tab/${trn}/GSTR1_AdjAdvances_Invoices`);
-            if (resAdjAdvances.data.success && resAdjAdvances.data.data) {
-                const records = resAdjAdvances.data.data.records || resAdjAdvances.data.data;
-                setAdjAdvancesCount(Array.isArray(records) ? records.length : 0);
-            }
-
-            // HSN count
-            const resHsnB2B = await api.get(`/forms/tab/${trn}/GSTR1_HSN_B2B`);
-            const resHsnB2C = await api.get(`/forms/tab/${trn}/GSTR1_HSN_B2C`);
-            let hsnTotal = 0;
-            if (resHsnB2B.data.success && resHsnB2B.data.data) {
-                const recs = resHsnB2B.data.data.records || (Array.isArray(resHsnB2B.data.data) ? resHsnB2B.data.data : []);
-                hsnTotal += recs.length;
-            }
-            if (resHsnB2C.data.success && resHsnB2C.data.data) {
-                const recs = resHsnB2C.data.data.records || (Array.isArray(resHsnB2C.data.data) ? resHsnB2C.data.data : []);
-                hsnTotal += recs.length;
-            }
-            setHsnCount(hsnTotal);
-
-            // Documents count
-            const resDocs = await api.get(`/forms/tab/${trn}/GSTR1_Docs_Issued`);
-            if (resDocs.data.success && resDocs.data.data) {
-                const docs = resDocs.data.data.documents || [];
-                setDocsCount(Array.isArray(docs) ? docs.length : 0);
-            }
-
-            // ECO count
-            const resEcoTcs = await api.get(`/forms/tab/${trn}/GSTR1_ECO_TCS`);
-            const resEcoPay = await api.get(`/forms/tab/${trn}/GSTR1_ECO_PAY`);
-            let ecoTotal = 0;
-            if (resEcoTcs.data.success && resEcoTcs.data.data) {
-                const recs = resEcoTcs.data.data.records || (Array.isArray(resEcoTcs.data.data) ? resEcoTcs.data.data : []);
-                ecoTotal += recs.length;
-            }
-            if (resEcoPay.data.success && resEcoPay.data.data) {
-                const recs = resEcoPay.data.data.records || (Array.isArray(resEcoPay.data.data) ? resEcoPay.data.data : []);
-                ecoTotal += recs.length;
-            }
-            setEcoCount(ecoTotal);
-
-            // Section 9(5) count
-            const sup95Tabs = ['GSTR1_SUP95_R2R', 'GSTR1_SUP95_R2NR', 'GSTR1_SUP95_NR2R', 'GSTR1_SUP95_NR2NR'];
-            let sup95Total = 0;
-            await Promise.all(sup95Tabs.map(async (tab) => {
-                const res = await api.get(`/forms/tab/${trn}/${tab}`);
-                if (res.data.success && res.data.data) {
-                    const recs = res.data.data.records || (Array.isArray(res.data.data) ? res.data.data : []);
-                    sup95Total += recs.length;
-                }
-            }));
-            setSup95Count(sup95Total);
         } catch (error) {
-            console.error("Failed to fetch invoice counts");
+            console.error("Failed to fetch invoice counts:", error);
         }
     };
 
@@ -195,34 +104,43 @@ const GSTR1Dashboard = () => {
     };
 
     const handleReset = async () => {
-        if (!window.confirm("Are you sure you want to reset all GSTR-1 data for this period? This will permanently delete all saved invoices, HSN summaries, and documents.")) return;
+        const confirmed = window.confirm(
+            'Are you sure you want to reset GSTR-1?\nAll saved GSTR-1 data will be permanently deleted.\nThis action cannot be undone.'
+        );
+
+        if (!confirmed) return;
 
         try {
+            setLoading(true);
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-            const res = await api.delete(`/forms/reset/${trn}`);
-            if (res.data.success) {
-                toast.success('GSTR-1 data reset successfully');
+            
+            // Call the new gstr1 reset API to clear the 13 postgres tables
+            await gstr1Service.resetGstr1Data(trn);
+            
+            // Also call the old API to clear any legacy blob data just in case
+            await api.delete(`/forms/reset/${trn}`);
 
-                // Immediately reset frontend counts
-                setB2bCount(0);
-                setB2clCount(0);
-                setExportsCount(0);
-                setB2csCount(0);
-                setNilRatedCount(0);
-                setCdnrCount(0);
-                setCdnurCount(0);
-                setAdvTaxCount(0);
-                setAdjAdvancesCount(0);
-                setHsnCount(0);
-                setDocsCount(0);
-                setEcoCount(0);
-                setSup95Count(0);
+            toast.success('GSTR-1 data reset successfully.');
 
-                setTimeout(() => window.location.reload(), 1500);
-            }
+            // Immediately reset frontend counts
+            setB2bCount(0);
+            setB2clCount(0);
+            setExportsCount(0);
+            setB2csCount(0);
+            setNilRatedCount(0);
+            setCdnrCount(0);
+            setCdnurCount(0);
+            setAdvTaxCount(0);
+            setAdjAdvancesCount(0);
+            setHsnCount(0);
+            setDocsCount(0);
+            setEcoCount(0);
+            setSup95Count(0);
         } catch (error) {
             console.error("Reset failed", error);
-            toast.error('Failed to reset GSTR-1 data');
+            toast.error('Failed to reset GSTR-1 data: ' + error.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -343,7 +261,7 @@ const GSTR1Dashboard = () => {
                                                 key={index}
                                                 onClick={() => {
                                                     if (index === 0) navigate('/returns/gstr1/b2b');
-                                                    else if (index === 1) navigate('/returns/gstr1/b2cl');
+                                                    else if (index === 1) navigate('/returns/auth/gstr1/b2cl/summary');
                                                     else if (index === 2) navigate('/returns/gstr1/exports');
                                                     else if (index === 3) navigate('/returns/gstr1/b2cs');
                                                     else if (index === 4) navigate('/returns/gstr1/nilrated/add');

@@ -4,6 +4,7 @@ import './Dashboard.css';
 import './GSTR1Supplies95Dashboard.css';
 import './GSTR1B2BAddInvoice.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -398,30 +399,43 @@ const GSTR1Supplies95AddDetails = () => {
 
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-            const tabName = `GSTR1_SUP95_${tab}`;
 
-            // Fetch current records
-            const getRes = await api.get(`/forms/tab/${trn}/${tabName}`);
-            let records = [];
-            if (getRes.data.success && getRes.data.data) {
-                records = getRes.data.data.records || (Array.isArray(getRes.data.data) ? getRes.data.data : []);
+            let payload = {
+                trn,
+                tab_type: tab,
+                document_number: formData.documentNumber || '',
+                document_date: formData.documentDate || '',
+                pos: formData.pos,
+                taxable_value: formData.taxableValue || 0,
+                rate: formData.rate || '',
+                supply_type: formData.supplyType,
+                supplier_gstin: formData.supplierGstin || '',
+                supplier_name: formData.supplierName || '',
+                recipient_gstin: formData.recipientGstin || '',
+                recipient_name: formData.recipientName || ''
+            };
+
+            if (isB2B) {
+                payload.item_details = formData.itemDetails.filter(item => parseFloat(item.taxableValue) > 0);
+            } else {
+                payload.item_details = {
+                    integratedTax: formData.integratedTax,
+                    centralTax: formData.centralTax,
+                    stateTax: formData.stateTax,
+                    cess: formData.cess
+                };
             }
 
-            const newRecord = { ...formData, id: Date.now() };
-            const updatedRecords = [...records, newRecord];
+            const res = await gstr1Service.saveGstr1Record('gstr1_sup95', payload);
 
-            const saveRes = await api.post('/forms/save-tab', {
-                trn,
-                tabName,
-                data: { records: updatedRecords }
-            });
-
-            if (saveRes.data.success) {
+            if (res.success) {
                 toast.success('Supplies record saved successfully!');
                 navigate(`/returns/gstr1/sup95?tab=${tab}`);
+            } else {
+                toast.error('Failed to save record');
             }
         } catch (error) {
-            toast.error('Failed to save record');
+            toast.error('Error saving: ' + error.message);
         }
     };
 

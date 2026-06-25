@@ -4,6 +4,7 @@ import './Dashboard.css';
 import './GSTR1CDNRAddInvoice.css'; // Reusing common grid styles
 import './GSTR1CDNURAddInvoice.css'; // Specific table styles
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -115,7 +116,7 @@ const GSTR1CDNURAddInvoice = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.noteNumber || !formData.noteDate || !formData.noteType || !formData.pos) {
+        if (!formData.noteNumber || !formData.noteDate || !formData.noteType || formData.pos === 'Select') {
             toast.error('Please fill all mandatory fields marked with *');
             return;
         }
@@ -124,26 +125,27 @@ const GSTR1CDNURAddInvoice = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
 
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_CDNUR_Invoices`);
-            let existingInvoices = [];
-            if (res.data.success && res.data.data) {
-                existingInvoices = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-            }
+            const item_details = Object.keys(taxData)
+                .filter(rate => taxData[rate].taxableValue !== '')
+                .map(rate => ({
+                    rate,
+                    ...taxData[rate]
+                }));
 
-            const newRecord = {
-                ...formData,
-                taxDetails: taxData,
-                id: Date.now()
-            };
-            existingInvoices.push(newRecord);
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName: 'GSTR1_CDNUR_Invoices',
-                data: { invoices: existingInvoices }
-            });
+                note_number: formData.noteNumber,
+                note_date: formData.noteDate,
+                note_type: formData.noteType,
+                place_of_supply: formData.pos,
+                note_value: formData.noteValue || 0,
+                supply_type: formData.supplyType,
+                item_details
+            };
 
-            if (saveRes.data.success) {
+            const res = await gstr1Service.saveGstr1Record('gstr1_cdnur_invoices', payload);
+
+            if (res.success) {
                 toast.success('CDNUR Record saved successfully!');
                 navigate('/returns/gstr1/cdnur');
             } else {

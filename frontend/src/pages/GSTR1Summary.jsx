@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import gstr1Service from '../services/gstr1Service';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; 
 import './GSTR1Dashboard.css';
@@ -17,13 +18,32 @@ const GSTR1Summary = () => {
         const fetchSummary = async () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await api.get(`/forms/gstr1-summary/${trn}`);
-                if (res.data.success) {
-                    setSummaryData(res.data.data);
-                }
+                
+                // Fetch live counts from Supabase
+                const countRes = await gstr1Service.getGstr1Counts(trn);
+                const c = countRes.data || {};
+                
+                setSummaryData({
+                   b2b: { records: c.b2b || 0 },
+                   b2bReverse: { records: 0 },
+                   sez: { records: 0 },
+                   deemedExports: { records: 0 },
+                   b2cl: { records: c.b2cl || 0 },
+                   exports: { records: c.exports || 0 },
+                   b2cs: { records: c.b2cs || 0 },
+                   nilRated: { records: c.nilRated || 0 },
+                   cdnr: { records: c.cdnr || 0 },
+                   cdnur: { records: c.cdnur || 0 },
+                   advTax: { records: c.advTax || 0 },
+                   adjAdvances: { records: c.adjAdvances || 0 },
+                   hsn: { records: c.hsn || 0 },
+                   documents: { records: c.documents || 0 },
+                   eco: { records: c.eco || 0 },
+                   sup95: { records: c.sup95 || 0 },
+                });
             } catch (error) {
-                console.error("Failed to fetch summary", error);
-                toast.error("Failed to load summary data");
+                console.error("Failed to fetch summary counts", error);
+                toast.error("Failed to load summary counts");
             } finally {
                 setLoading(false);
             }
@@ -42,6 +62,44 @@ const GSTR1Summary = () => {
         setTimeout(() => {
             window.location.reload();
         }, 500);
+    };
+
+    const handleReset = async () => {
+        const confirmed = window.confirm(
+            'Are you sure you want to reset GSTR-1?\nAll saved GSTR-1 data will be permanently deleted.\nThis action cannot be undone.'
+        );
+
+        if (!confirmed) return;
+
+        try {
+            setLoading(true);
+            const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+            await gstr1Service.resetGstr1Data(trn);
+
+            toast.success('GSTR-1 data reset successfully.');
+            setSummaryData({
+               b2b: { records: 0 },
+               b2bReverse: { records: 0 },
+               sez: { records: 0 },
+               deemedExports: { records: 0 },
+               b2cl: { records: 0 },
+               exports: { records: 0 },
+               b2cs: { records: 0 },
+               nilRated: { records: 0 },
+               cdnr: { records: 0 },
+               cdnur: { records: 0 },
+               advTax: { records: 0 },
+               adjAdvances: { records: 0 },
+               hsn: { records: 0 },
+               documents: { records: 0 },
+               eco: { records: 0 },
+               sup95: { records: 0 },
+               rawRecords: {}
+            });
+        } catch (error) {
+            toast.error('Reset failed: ' + error.message);
+            setLoading(false);
+        }
     };
 
     const s = summaryData || {};
@@ -710,6 +768,14 @@ const GSTR1Summary = () => {
 
                 <div className="summary-actions-bottom">
                     <button className="btn-summary btn-summary-back" onClick={() => navigate('/returns/gstr1')}>BACK</button>
+                    <button 
+                        className="btn-summary btn-summary-reset" 
+                        onClick={handleReset}
+                        disabled={loading}
+                        style={{ backgroundColor: '#dc2626', color: 'white' }}
+                    >
+                        RESET GSTR-1
+                    </button>
                     <button className="btn-summary btn-summary-pdf" onClick={() => navigate('/returns/gstr1/pdf-preview?fy=2025-26&month=March')}>DOWNLOAD (PDF)</button>
                     <button 
                         className={`btn-summary btn-summary-file ${hasRecords ? 'active' : ''}`}

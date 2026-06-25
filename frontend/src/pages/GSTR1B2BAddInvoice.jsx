@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1B2BAddInvoice.css'; // Specific styles for this page
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -136,34 +137,28 @@ const GSTR1B2BAddInvoice = () => {
         setIsSaving(true);
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-            console.log('Saving to TRN:', trn);
-
-            // Fetch existing
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_B2B_Invoices`);
-            console.log('Existing data:', res.data);
             
-            let existingInvoices = [];
-            if (res.data.success && res.data.data && Array.isArray(res.data.data.invoices)) {
-                existingInvoices = res.data.data.invoices;
-            } else if (res.data.success && Array.isArray(res.data.data)) {
-                existingInvoices = res.data.data;
-            }
-
-            // We send 'itemDetails' which the backend maps to 'tax_items'
-            const newInvoice = { ...formData, id: Date.now() };
-            existingInvoices.push(newInvoice);
-
-            console.log('Sending payload:', { trn, tabName: 'GSTR1_B2B_Invoices', data: { invoices: existingInvoices } });
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName: 'GSTR1_B2B_Invoices',
-                data: { invoices: existingInvoices }
-            });
+                recipient_gstin: formData.recipientGSTIN,
+                recipient_name: formData.recipientName,
+                invoice_no: formData.invoiceNo,
+                invoice_date: formData.invoiceDate,
+                total_invoice_value: formData.totalInvoiceValue,
+                pos: formData.pos,
+                supply_type: formData.supplyType,
+                is_deemed_export: formData.isDeemedExport,
+                is_sez_with_payment: formData.isSEZWithPayment,
+                is_sez_without_payment: formData.isSEZWithoutPayment,
+                is_reverse_charge: formData.isReverseCharge,
+                is_intra_state_igst: formData.isIntraStateIGST,
+                is_differential_percentage: formData.isDifferentialPercentage,
+                tax_items: formData.itemDetails.filter(item => item.taxableValue !== '')
+            };
 
-            console.log('Save response:', saveRes.data);
+            const res = await gstr1Service.saveGstr1Record('gstr1_b2b_invoices', payload);
 
-            if (saveRes.data.success) {
+            if (res.success) {
                 toast.success('Invoice added successfully!');
                 navigate('/returns/gstr1/b2b');
             } else {

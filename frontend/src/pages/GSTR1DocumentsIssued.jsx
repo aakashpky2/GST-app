@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1DocumentsIssued.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 
 const GSTR1DocumentsIssued = () => {
@@ -99,18 +100,23 @@ const GSTR1DocumentsIssued = () => {
                 });
             });
 
-            const saveRes = await api.post('/forms/save-tab', {
-                trn,
-                tabName: 'GSTR1_Docs_Issued',
-                data: { documents: allDocs }
-            });
+            await Promise.all(
+                allDocs.map(async (doc) => {
+                    const payload = {
+                        trn,
+                        category: doc.category,
+                        from_serial_no: doc.fromSerial,
+                        to_serial_no: doc.toSerial,
+                        total_number: parseInt(doc.total) || 0,
+                        cancelled_number: parseInt(doc.cancelled) || 0,
+                        net_issued: parseInt(doc.net) || 0
+                    };
+                    return gstr1Service.saveGstr1Record('gstr1_docs_issued', payload);
+                })
+            );
 
-            if (saveRes.data.success) {
-                toast.success('Documents Issued saved successfully!');
-                navigate('/returns/gstr1');
-            } else {
-                toast.error('Failed to save documents');
-            }
+            toast.success('Documents Issued saved successfully!');
+            navigate('/returns/gstr1');
         } catch (err) {
             toast.error('Error saving: ' + err.message);
         } finally {

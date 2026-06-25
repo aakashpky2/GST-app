@@ -9,41 +9,24 @@ const GSTR2ACreditDebitNotes = () => {
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const recordsPerPage = 10;
-
-    const [taxpayerInfo, setTaxpayerInfo] = useState({
-        gstin: '...',
-        legalName: '...',
-        tradeName: '...',
-        financialYear: '2025-26',
-        returnPeriod: 'March'
-    });
+    const [taxpayerInfo, setTaxpayerInfo] = useState({ gstin: '', legalName: '', financialYear: '2025-26' });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch User Details
-                const userRes = await api.get('/auth/me');
-                if (userRes.data?.success && userRes.data?.data) {
-                    const user = userRes.data.data;
-                    setTaxpayerInfo(prev => ({
-                        ...prev,
-                        gstin: user.gstin || localStorage.getItem('gst_trn') || '32AAICD8127A1Z4',
-                        legalName: user.legal_name || 'GST USER',
-                        tradeName: user.trade_name || 'GST USER TRADE'
-                    }));
-                }
+                const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+                try {
+                    const userRes = await api.get('/auth/me');
+                    if (userRes.data?.success && userRes.data?.data) {
+                        const u = userRes.data.data;
+                        setTaxpayerInfo(prev => ({ ...prev, gstin: u.gstin || u.pan || trn, legalName: u.legal_name || 'GST USER' }));
+                    }
+                } catch (_) {}
 
-                // Mock Fetch Notes
-                const mockNotes = [];
-                /*
-                const mockNotes = [
-                    { id: 1, supplierGstin: '07AAACA1234A1Z5', supplierName: 'ABC CORP', noteNum: 'CN-101', noteType: 'Credit', noteDate: '15/03/2026', noteValue: '5000.00', taxableValue: '4000.00', igst: '720.00', cgst: '0.00', sgst: '0.00', cess: '0.00', filingStatus: 'Filed' },
-                ];
-                */
-                
-                setNotes(mockNotes);
+                const res = await api.get(`/gstr2a/cdnr/${trn}`);
+                if (res.data?.success) setNotes(res.data.data || []);
             } catch (err) {
-                console.warn('Failed to fetch data', err);
+                console.warn('Failed to fetch GSTR-2A CDNR data', err);
             } finally {
                 setLoading(false);
             }
@@ -51,153 +34,91 @@ const GSTR2ACreditDebitNotes = () => {
         fetchData();
     }, []);
 
-    // Pagination Logic
-    const indexOfLastRecord = currentPage * recordsPerPage;
-    const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-    const currentRecords = notes.slice(indexOfFirstRecord, indexOfLastRecord);
+    const indexOfLast = currentPage * recordsPerPage;
+    const indexOfFirst = indexOfLast - recordsPerPage;
+    const currentRecords = notes.slice(indexOfFirst, indexOfLast);
     const totalPages = Math.ceil(notes.length / recordsPerPage);
-
-    const downloadCSV = () => {
-        if (notes.length === 0) return;
-        
-        const headers = ['Supplier GSTIN', 'Supplier Name', 'Note Number', 'Note Type', 'Note Date', 'Note Value', 'Taxable Value', 'IGST', 'CGST', 'SGST', 'Cess', 'Filing Status'];
-        
-        const csvRows = notes.map(n => [
-            n.supplierGstin,
-            n.supplierName,
-            n.noteNum,
-            n.noteType,
-            n.noteDate,
-            n.noteValue,
-            n.taxableValue,
-            n.igst,
-            n.cgst,
-            n.sgst,
-            n.cess,
-            n.filingStatus
-        ].join(','));
-
-        const csvContent = [headers.join(','), ...csvRows].join('\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'Credit_Debit_Notes.csv');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+    const fmt = v => parseFloat(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
     return (
         <div className="cdn-container">
-            {/* Breadcrumb Bar */}
             <div className="cdn-breadcrumb">
-                <Link to="/dashboard">Dashboard</Link>
-                <span>&gt;</span>
-                <Link to="/returns-dashboard">Returns</Link>
-                <span>&gt;</span>
-                <Link to="/returns/gstr2a">GSTR2A</Link>
-                <span>&gt;</span>
+                <Link to="/dashboard">Dashboard</Link><span>›</span>
+                <Link to="/returns-dashboard">Returns</Link><span>›</span>
+                <Link to="/returns/gstr2a">GSTR-2A</Link><span>›</span>
                 <span>Credit/Debit Notes</span>
             </div>
 
             <div className="cdn-card">
-                <div className="cdn-header-row">
-                    <h2 className="cdn-title">Credit/debit notes - Supplier wise details</h2>
-                    <button className="cdn-help-btn">HELP</button>
+                <div style={{ background: '#009688', color: 'white', padding: '10px 15px', fontSize: '15px', fontWeight: 'bold', marginBottom: '15px' }}>
+                    Credit / Debit Notes — Auto Drafted (Read Only)
                 </div>
 
-                {/* Taxpayer Details Header */}
                 <div className="cdn-taxpayer-details">
                     <div className="tp-row">
                         <div className="tp-item"><strong>GSTIN:</strong> {taxpayerInfo.gstin}</div>
                         <div className="tp-item"><strong>Legal Name:</strong> {taxpayerInfo.legalName}</div>
-                        <div className="tp-item"><strong>Trade Name:</strong> {taxpayerInfo.tradeName}</div>
-                    </div>
-                    <div className="tp-row">
                         <div className="tp-item"><strong>Financial Year:</strong> {taxpayerInfo.financialYear}</div>
-                        <div className="tp-item"><strong>Return Period:</strong> {taxpayerInfo.returnPeriod}</div>
                     </div>
                 </div>
 
-                {!loading && notes.length === 0 ? (
-                    /* Empty State Alert */
-                    <div className="cdn-alert-info">
-                        <span className="info-icon">ℹ</span>
-                        <span>No document found for the provided Inputs.</span>
-                    </div>
+                <div style={{ background: '#e3f2fd', border: '1px solid #90caf9', padding: '8px 12px', fontSize: '13px', marginBottom: '10px', color: '#1565c0' }}>
+                    ℹ Records shown below are auto-generated from your suppliers' GSTR-1 CDNR filings. This section is <strong>read-only</strong>.
+                </div>
+
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '30px', color: '#666' }}>Loading...</div>
+                ) : notes.length === 0 ? (
+                    <div className="cdn-alert-info"><span className="info-icon">ℹ</span><span>No Credit/Debit Notes found. Records appear when suppliers file CDNR with your GSTIN.</span></div>
                 ) : (
-                    /* Data Table */
                     <div className="cdn-table-wrapper">
+                        <span style={{ fontSize: '13px', color: '#555', display: 'block', marginBottom: '8px' }}>Total Records: <strong>{notes.length}</strong></span>
                         <table className="cdn-table">
                             <thead>
                                 <tr>
+                                    <th>S.No</th>
                                     <th>Supplier GSTIN</th>
                                     <th>Supplier Name</th>
                                     <th>Note Number</th>
                                     <th>Note Type</th>
                                     <th>Note Date</th>
-                                    <th>Note Value</th>
-                                    <th>Taxable Value</th>
-                                    <th>IGST</th>
-                                    <th>CGST</th>
-                                    <th>SGST</th>
-                                    <th>Cess</th>
-                                    <th>Filing Status</th>
+                                    <th>Taxable Value (₹)</th>
+                                    <th>IGST (₹)</th>
+                                    <th>CGST (₹)</th>
+                                    <th>SGST (₹)</th>
+                                    <th>Total Tax (₹)</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentRecords.map((n, index) => (
-                                    <tr key={index}>
-                                        <td>{n.supplierGstin}</td>
-                                        <td>{n.supplierName}</td>
-                                        <td>{n.noteNum}</td>
-                                        <td>{n.noteType}</td>
-                                        <td>{n.noteDate}</td>
-                                        <td>{n.noteValue}</td>
-                                        <td>{n.taxableValue}</td>
-                                        <td>{n.igst}</td>
-                                        <td>{n.cgst}</td>
-                                        <td>{n.sgst}</td>
-                                        <td>{n.cess}</td>
-                                        <td>{n.filingStatus}</td>
+                                {currentRecords.map((n, i) => (
+                                    <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f9f9f9' }}>
+                                        <td style={{ textAlign: 'center' }}>{indexOfFirst + i + 1}</td>
+                                        <td>{n.supplier_gstin}</td>
+                                        <td>{n.supplier_name}</td>
+                                        <td style={{ color: '#1a73e8' }}>{n.note_number}</td>
+                                        <td><span style={{ background: n.note_type === 'Credit' ? '#e8f5e9' : '#fff3e0', color: n.note_type === 'Credit' ? '#2e7d32' : '#e65100', padding: '2px 8px', fontSize: '11px' }}>{n.note_type}</span></td>
+                                        <td>{n.note_date}</td>
+                                        <td style={{ textAlign: 'right' }}>{fmt(n.taxable_value)}</td>
+                                        <td style={{ textAlign: 'right' }}>{fmt(n.igst)}</td>
+                                        <td style={{ textAlign: 'right' }}>{fmt(n.cgst)}</td>
+                                        <td style={{ textAlign: 'right' }}>{fmt(n.sgst)}</td>
+                                        <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{fmt(n.total_tax)}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-
-                        {/* Pagination Controls */}
                         {totalPages > 1 && (
                             <div className="cdn-pagination">
-                                <button 
-                                    disabled={currentPage === 1} 
-                                    onClick={() => setCurrentPage(prev => prev - 1)}
-                                >
-                                    Previous
-                                </button>
+                                <button disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>« Previous</button>
                                 <span>Page {currentPage} of {totalPages}</span>
-                                <button 
-                                    disabled={currentPage === totalPages} 
-                                    onClick={() => setCurrentPage(prev => prev + 1)}
-                                >
-                                    Next
-                                </button>
+                                <button disabled={currentPage === totalPages} onClick={() => setCurrentPage(p => p + 1)}>Next »</button>
                             </div>
                         )}
                     </div>
                 )}
 
-                {/* Bottom Actions */}
                 <div className="cdn-actions">
                     <button className="cdn-btn-back" onClick={() => navigate('/returns/gstr2a')}>BACK</button>
-                    <button 
-                        className={`cdn-btn-download ${notes.length === 0 ? 'disabled' : ''}`} 
-                        onClick={downloadCSV}
-                        disabled={notes.length === 0}
-                    >
-                        DOWNLOAD DOCUMENTS (CSV)
-                    </button>
                 </div>
             </div>
         </div>

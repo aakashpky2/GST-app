@@ -40,10 +40,10 @@ const GSTR2BB2BDetails = () => {
                     console.warn("Could not load registration profile.");
                 }
 
-                const gstr1Res = await api.get(`/forms/gstr1-summary/${trn}`);
-                if (gstr1Res.data.success && gstr1Res.data.data) {
-                    const raw = gstr1Res.data.data.rawRecords || {};
-                    const allB2b = raw.GSTR1_B2B_Invoices?.invoices || [];
+                const gstr2bRes = await api.get(`/gstr2b/${trn}`);
+                if (gstr2bRes.data.success && gstr2bRes.data.data) {
+                    const rawRecords = gstr2bRes.data.data.rawRecords || [];
+                    const allB2b = rawRecords.filter(r => r.source_section === 'B2B' || r.source_section === 'B2BA');
                     
                     // We combine regular and reverse charge for the B2B inward table
                     setB2bInvoices(allB2b);
@@ -70,7 +70,7 @@ const GSTR2BB2BDetails = () => {
     };
 
     const getInvoiceValue = (inv) => {
-        return parseFloat(inv.totalInvoiceValue || inv.taxableValue || inv.netValue || inv.value) || 0;
+        return parseFloat(inv.totalInvoiceValue || inv.taxable_value || inv.netValue || inv.value) || 0;
     };
 
     const todayDate = new Date().toLocaleDateString('en-GB');
@@ -485,18 +485,18 @@ const GSTR2BB2BDetails = () => {
                                         <React.Fragment key={idx}>
                                             <tr>
                                                 <td className="center-align">{idx + 1}</td>
-                                                <td className="center-align">{inv.recipientGstin || inv.recipientGSTIN || '32AABCT0020H1Z5'}</td>
-                                                <td className="center-align">{inv.recipientName || 'THE FEDERAL BANK LTD'}</td>
+                                                <td className="center-align">{inv.supplier_gstin || inv.recipientGstin || inv.recipientGSTIN || '32AABCT0020H1Z5'}</td>
+                                                <td className="center-align">{inv.supplier_name || inv.recipientName || 'THE FEDERAL BANK LTD'}</td>
                                                 <td className="center-align">
                                                     <div className="invoice-number" onClick={() => toggleRow(idx)}>
-                                                        {inv.invoiceNo || '2603140644702113'}
+                                                        {inv.invoice_number || inv.invoiceNo || '2603140644702113'}
                                                         <span className={`expand-arrow ${expandedRows[idx] ? 'open' : ''}`}>^</span>
                                                     </div>
                                                 </td>
                                                 <td className="center-align">Regular</td>
-                                                <td className="center-align">{inv.invoiceDate || '14/03/2026'}</td>
+                                                <td className="center-align">{inv.invoice_date || inv.invoiceDate || '14/03/2026'}</td>
                                                 <td className="right-align">{formatCurr(getInvoiceValue(inv))}</td>
-                                                <td className="center-align">{inv.pos ? inv.pos.split('-')[1]?.trim() : 'Kerala'}</td>
+                                                <td className="center-align">{inv.place_of_supply ? inv.place_of_supply.split('-')[1]?.trim() : 'Kerala'}</td>
                                                 <td className="center-align">{inv.isReverseCharge || inv.reverseCharge ? 'Y' : 'N'}</td>
                                             </tr>
                                             {/* Nested Tax Details Table */}
@@ -529,11 +529,11 @@ const GSTR2BB2BDetails = () => {
                                                                         ))
                                                                     ) : (
                                                                         <tr>
-                                                                            <td>18</td>
-                                                                            <td>{formatCurr(inv.taxableValue)}</td>
-                                                                            <td>{formatCurr(inv.integratedTax)}</td>
-                                                                            <td>{formatCurr(inv.centralTax)}</td>
-                                                                            <td>{formatCurr(inv.stateTax)}</td>
+                                                                            <td>{inv.rate || 18}</td>
+                                                                            <td>{formatCurr(inv.taxable_value || inv.taxableValue)}</td>
+                                                                            <td>{formatCurr(inv.igst || inv.integratedTax)}</td>
+                                                                            <td>{formatCurr(inv.cgst || inv.centralTax)}</td>
+                                                                            <td>{formatCurr(inv.sgst || inv.stateTax)}</td>
                                                                             <td>{formatCurr(inv.cess)}</td>
                                                                         </tr>
                                                                     )}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1B2CLAddInvoice.css'; // Specific styles for this page
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -116,25 +117,22 @@ const GSTR1B2CLAddInvoice = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
 
-            // Fetch existing B2CL invoices
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_B2CL_Invoices`);
-            let existingInvoices = [];
-            if (res.data.success && res.data.data) {
-                existingInvoices = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-            }
-
-            const newInvoice = { ...formData, id: Date.now() };
-            existingInvoices.push(newInvoice);
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName: 'GSTR1_B2CL_Invoices',
-                data: { invoices: existingInvoices }
-            });
+                pos: formData.pos,
+                invoice_no: formData.invoiceNo,
+                invoice_date: formData.invoiceDate,
+                total_invoice_value: formData.totalInvoiceValue,
+                supply_type: formData.supplyType,
+                is_differential: formData.isDifferentialPercentage,
+                item_details: formData.itemDetails.filter(item => item.taxableValue !== '')
+            };
 
-            if (saveRes.data.success) {
+            const res = await gstr1Service.saveGstr1Record('gstr1_b2cl_invoices', payload);
+
+            if (res.success) {
                 toast.success('B2CL Invoice saved successfully!');
-                navigate('/returns/gstr1/b2cl');
+                navigate('/returns/auth/gstr1/b2cl/summary');
             } else {
                 toast.error('Failed to save invoice');
             }
@@ -174,7 +172,7 @@ const GSTR1B2CLAddInvoice = () => {
 
                 <div className="b2cl-add-content-body">
                     <div className="b2cl-add-top-bar">
-                        <button className="b2cl-add-back-arrow" onClick={() => navigate('/returns/gstr1/b2cl')}>
+                        <button className="b2cl-add-back-arrow" onClick={() => navigate('/returns/auth/gstr1/b2cl/summary')}>
                             <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" strokeWidth="3" fill="none" strokeLinecap="round" strokeLinejoin="round">
                                 <line x1="19" y1="12" x2="5" y2="12"></line>
                                 <polyline points="12 19 5 12 12 5"></polyline>
@@ -359,7 +357,7 @@ const GSTR1B2CLAddInvoice = () => {
                     </div>
 
                     <div className="b2cl-add-actions">
-                        <button className="b2cl-add-btn-outline" onClick={() => navigate('/returns/gstr1/b2cl')}>BACK</button>
+                        <button className="b2cl-add-btn-outline" onClick={() => navigate('/returns/auth/gstr1/b2cl/summary')}>BACK</button>
                         <button className="b2cl-add-btn-primary" onClick={handleSave} disabled={isSaving}>
                             {isSaving ? 'SAVING...' : 'SAVE'}
                         </button>

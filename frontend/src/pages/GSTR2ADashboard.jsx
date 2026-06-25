@@ -6,148 +6,159 @@ import './GSTR2ADashboard.css';
 const GSTR2ADashboard = () => {
     const navigate = useNavigate();
     const [taxpayerInfo, setTaxpayerInfo] = useState({
-        gstin: '...',
-        legalName: '...',
-        tradeName: '...',
-        financialYear: '2025-26', // Mock or passed from previous screen
+        gstin: '',
+        legalName: '',
+        tradeName: '',
+        financialYear: '2025-26',
         returnPeriod: 'March'
     });
 
     useEffect(() => {
-        const fetchUserData = async () => {
+        const loadData = async () => {
             try {
-                const { data } = await api.get('/auth/me');
-                if (data?.success && data?.data) {
-                    const user = data.data;
+                const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+                const userRes = await api.get('/auth/me');
+                if (userRes.data?.success && userRes.data?.data) {
+                    const u = userRes.data.data;
                     setTaxpayerInfo(prev => ({
                         ...prev,
-                        gstin: user.gstin || localStorage.getItem('gst_trn') || '32AAICD8127A1Z4',
-                        legalName: user.legal_name || 'GST USER',
-                        tradeName: user.trade_name || 'GST USER TRADE'
+                        gstin: u.gstin || u.pan || trn,
+                        legalName: u.legal_name || 'GST USER',
+                        tradeName: u.trade_name || ''
                     }));
                 }
             } catch (err) {
-                console.warn('Failed to fetch user data', err);
+                console.warn('Profile load failed:', err.message);
             }
         };
-        fetchUserData();
+        loadData();
     }, []);
 
-    const cards = {
-        partA: [
-            { title: 'B2B Invoices', route: '/returns/gstr2a/b2b-invoices' },
-            { title: 'Credit/Debit Notes', route: '/returns/gstr2a/credit-debit-notes' },
-            { title: 'Amendments to B2B Invoices', route: '/returns/gstr2a/amendments-b2b' },
-            { title: 'Amendments to Credit/Debit Notes', route: '/returns/gstr2a/amendments-credit-debit' },
-            { title: 'ECO Documents', route: '/returns/gstr2a/eco-documents' },
-            { title: 'Amendments to ECO Documents', route: '/returns/gstr2a/amendments-eco-documents' },
-        ],
-        partB: [
-            { title: 'ISD Credits', route: '/returns/gstr2a/isd-credits' },
-            { title: 'Amendments to ISD Credits', route: '/returns/gstr2a/amendments-isd-credits' },
-        ],
-        partC: [
-            { title: 'TDS Credits', route: '/returns/gstr2a/tds-credits' },
-            { title: 'Amendments to TDS Credits', route: '/returns/gstr2a/amendments-tds-credits' },
-            { title: 'TCS Credits', route: '/returns/gstr2a/tcs-credits' },
-        ],
-        partD: [
-            { title: 'Import of goods from overseas on bill of entry', route: '/returns/gstr2a/import-goods-overseas' },
-            { title: 'Import of goods from SEZ units / developers on bill of entry', route: '/returns/gstr2a/import-sez' },
-        ]
-    };
+    const cardsA = [
+        { title: 'B2B Invoices', route: '/returns/gstr2a/b2b-invoices' },
+        { title: 'Credit/Debit Notes', route: '/returns/gstr2a/credit-debit-notes' },
+        { title: 'Amendments to B2B Invoices', route: '/returns/gstr2a/amendments-b2b' },
+        { title: 'Amendments to Credit/Debit Notes', route: '/returns/gstr2a/amendments-credit-debit' },
+        { title: 'ECO Documents', route: '/returns/gstr2a/eco-documents' },
+        { title: 'Amendments to ECO Documents', route: '/returns/gstr2a/amendments-eco-documents' }
+    ];
+
+    const cardsB = [
+        { title: 'ISD Credits', route: '/returns/gstr2a/isd-credits' },
+        { title: 'Amendments to ISD Credits', route: '/returns/gstr2a/amendments-isd-credits' }
+    ];
+
+    const cardsC = [
+        { title: 'TDS Credits', route: '/returns/gstr2a/tds-credits' },
+        { title: 'Amendments to TDS Credits', route: '/returns/gstr2a/amendments-tds-credits' },
+        { title: 'TCS Credits', route: '/returns/gstr2a/tcs-credits' }
+    ];
+
+    const cardsD = [
+        { title: 'Import of goods from overseas on bill of entry', route: '/returns/gstr2a/import-goods-overseas' },
+        { title: 'Import of goods from SEZ units / developers on bill of entry', route: '/returns/gstr2a/import-sez' }
+    ];
 
     return (
-        <div className="gstr2a-container">
-            {/* Breadcrumb Bar */}
+        <div className="gstr2a-page">
             <div className="gstr2a-breadcrumb">
                 <Link to="/dashboard">Dashboard</Link>
-                <span>&gt;</span>
+                <span>›</span>
                 <Link to="/returns-dashboard">Returns</Link>
-                <span>&gt;</span>
+                <span>›</span>
                 <span>GSTR2A</span>
             </div>
 
-            <div className="gstr2a-card">
-                <h2 className="gstr2a-title">GSTR2A - AUTO DRAFTED DETAILS</h2>
+            <div className="gstr2a-container">
+                <div className="gstr2a-header-teal">
+                    GSTR2A - AUTO DRAFTED DETAILS
+                </div>
 
-                {/* Taxpayer Details Header */}
-                <div className="gstr2a-taxpayer-details">
-                    <div className="tp-row">
-                        <div className="tp-item"><strong>GSTIN:</strong> {taxpayerInfo.gstin}</div>
-                        <div className="tp-item"><strong>Legal Name:</strong> {taxpayerInfo.legalName}</div>
-                        <div className="tp-item"><strong>Trade Name:</strong> {taxpayerInfo.tradeName}</div>
-                    </div>
-                    <div className="tp-row">
-                        <div className="tp-item"><strong>Financial Year:</strong> {taxpayerInfo.financialYear}</div>
-                        <div className="tp-item"><strong>Return Period:</strong> {taxpayerInfo.returnPeriod}</div>
+                <div className="gstr2a-details-box">
+                    <div className="gstr2a-details-grid">
+                        <div className="detail-item"><strong>GSTIN</strong><br />{taxpayerInfo.gstin || '...'}</div>
+                        <div className="detail-item"><strong>Legal Name</strong><br />{taxpayerInfo.legalName || '...'}</div>
+                        <div className="detail-item"><strong>Trade Name</strong><br />{taxpayerInfo.tradeName || '-'}</div>
+                        <div className="detail-item"><strong>Financial Year</strong><br />{taxpayerInfo.financialYear}</div>
+                        <div className="detail-item"><strong>Return Period</strong><br />{taxpayerInfo.returnPeriod}</div>
                     </div>
                 </div>
 
-                {/* Information Alerts */}
-                <div className="gstr2a-alerts">
-                    <div className="alert-blue">
-                        <span className="info-icon">ℹ</span>
-                        <span>You can only view details of inward supplies in GSTR-2A.</span>
+                <div className="gstr2a-info-section">
+                    <div className="gstr2a-note-red">
+                        <strong>NOTE:</strong> You can only view details of inward supplies in GSTR-2A
                     </div>
-                    <div className="alert-note">
-                        <strong>Note:</strong> In case supplier is regular taxpayer, the filing status and date will be based on data saved or filed in GSTR1A otherwise based on GSTR1.
+                    <div className="gstr2a-note-secondary">
+                        In case supplier is regular taxpayer, the filing status and date will be based on data saved or filed in GSTR1A otherwise based on GSTR1.
                     </div>
                 </div>
 
-                {/* PART-A */}
-                <div className="gstr2a-part-section">
-                    <h3 className="part-title">PART-A</h3>
-                    <div className="gstr2a-cards-grid two-cols">
-                        {cards.partA.map((card, idx) => (
-                            <div key={idx} className="gstr2a-nav-card" onClick={() => navigate(card.route)}>
+                <div className="gstr2a-part-container">
+                    <div className="gstr2a-part-header">
+                        <h2>PART-A</h2>
+                        <span className="gstr2a-important-notice">Important Notice: If the invoices are more than 500, please check here</span>
+                    </div>
+                    <div className="gstr2a-card-grid-2">
+                        {cardsA.map((card, i) => (
+                            <div key={i} className="gstr2a-nav-btn" onClick={() => navigate(card.route)}>
                                 {card.title}
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* PART-B */}
-                <div className="gstr2a-part-section">
-                    <h3 className="part-title">PART-B</h3>
-                    <div className="gstr2a-cards-grid">
-                        {cards.partB.map((card, idx) => (
-                            <div key={idx} className="gstr2a-nav-card" onClick={() => navigate(card.route)}>
+                <div className="gstr2a-part-container">
+                    <div className="gstr2a-part-header">
+                        <h2>PART-B</h2>
+                    </div>
+                    <div className="gstr2a-card-grid-2">
+                        {cardsB.map((card, i) => (
+                            <div key={i} className="gstr2a-nav-btn" onClick={() => navigate(card.route)}>
                                 {card.title}
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* PART-C */}
-                <div className="gstr2a-part-section">
-                    <h3 className="part-title">PART-C</h3>
-                    <div className="gstr2a-cards-grid">
-                        {cards.partC.map((card, idx) => (
-                            <div key={idx} className="gstr2a-nav-card" onClick={() => navigate(card.route)}>
+                <div className="gstr2a-part-container">
+                    <div className="gstr2a-part-header">
+                        <h2>PART-C</h2>
+                    </div>
+                    <div className="gstr2a-card-grid-3">
+                        {cardsC.map((card, i) => (
+                            <div key={i} className="gstr2a-nav-btn" onClick={() => navigate(card.route)}>
                                 {card.title}
                             </div>
                         ))}
                     </div>
                 </div>
 
-                {/* PART-D */}
-                <div className="gstr2a-part-section">
-                    <h3 className="part-title">PART-D</h3>
-                    <div className="gstr2a-cards-grid">
-                        {cards.partD.map((card, idx) => (
-                            <div key={idx} className="gstr2a-nav-card" onClick={() => navigate(card.route)}>
+                <div className="gstr2a-part-container">
+                    <div className="gstr2a-part-header">
+                        <h2>PART-D</h2>
+                    </div>
+                    <div className="gstr2a-card-grid-2">
+                        {cardsD.map((card, i) => (
+                            <div key={i} className="gstr2a-nav-btn" onClick={() => navigate(card.route)}>
                                 {card.title}
                             </div>
                         ))}
                     </div>
-                </div>
-
-                {/* Bottom Actions */}
-                <div className="gstr2a-actions">
-                    <button className="gstr2a-btn-back" onClick={() => navigate('/returns-dashboard')}>BACK</button>
                 </div>
             </div>
+
+            <footer className="gstr2a-footer">
+                <div className="footer-content">
+                    <div className="footer-links">
+                        <span>Copyright © Goods and Services Tax Network</span>
+                        <span>Site Last Updated</span>
+                    </div>
+                    <div className="footer-right">
+                        <span>Designed & Developed by GSTN</span>
+                        <span>Site best viewed at 1024 x 768 resolution in Microsoft Edge, Mozilla Firefox 43.0+, Google Chrome 49.0+, and Safari 9.0+</span>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 };

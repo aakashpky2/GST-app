@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1ExportsAddInvoice.css'; // Specific styles for this page
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -105,23 +106,21 @@ const GSTR1ExportsAddInvoice = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
 
-            // Fetch existing Exports invoices
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_Exports_Invoices`);
-            let existingInvoices = [];
-            if (res.data.success && res.data.data) {
-                existingInvoices = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-            }
-
-            const newInvoice = { ...formData, id: Date.now() };
-            existingInvoices.push(newInvoice);
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName: 'GSTR1_Exports_Invoices',
-                data: { invoices: existingInvoices }
-            });
+                invoice_no: formData.invoiceNo,
+                invoice_date: formData.invoiceDate,
+                total_invoice_value: formData.totalInvoiceValue,
+                port_code: formData.portCode,
+                shipping_bill_no: formData.shippingBillNo,
+                shipping_bill_date: formData.shippingBillDate,
+                export_type: formData.gstPayment,
+                item_details: formData.itemDetails.filter(item => item.taxableValue !== '')
+            };
 
-            if (saveRes.data.success) {
+            const res = await gstr1Service.saveGstr1Record('gstr1_exports_invoices', payload);
+
+            if (res.success) {
                 toast.success('Export Invoice saved successfully!');
                 navigate('/returns/gstr1/exports');
             } else {

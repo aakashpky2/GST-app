@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1CDNRAddInvoice.css'; // Reusing common grid styles
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 
 const GSTR1AdjAdvancesAddDetails = () => {
@@ -103,7 +104,6 @@ const GSTR1AdjAdvancesAddDetails = () => {
     };
 
     const handleSave = async () => {
-        // Check if at least one row has data
         const hasData = formData.itemDetails.some(item => parseFloat(item.grossAdjustment) > 0);
         
         if (!formData.pos) {
@@ -120,27 +120,24 @@ const GSTR1AdjAdvancesAddDetails = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
 
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_AdjAdvances_Invoices`);
-            let existingRecords = [];
-            if (res.data.success && res.data.data) {
-                existingRecords = res.data.data.records || (Array.isArray(res.data.data) ? res.data.data : []);
-            }
+            await Promise.all(
+                formData.itemDetails
+                    .filter(item => parseFloat(item.grossAdjustment) > 0)
+                    .map(async (item) => {
+                        const payload = {
+                            trn,
+                            pos: formData.pos,
+                            supply_type: formData.supplyType,
+                            gross_advance_adjusted: item.grossAdjustment,
+                            rate: item.rate,
+                            item_details: [item]
+                        };
+                        return gstr1Service.saveGstr1Record('gstr1_adj_advances', payload);
+                    })
+            );
 
-            const newRecord = { ...formData, id: Date.now() };
-            existingRecords.push(newRecord);
-
-            const saveRes = await api.post('/forms/save-tab', {
-                trn,
-                tabName: 'GSTR1_AdjAdvances_Invoices',
-                data: { records: existingRecords }
-            });
-
-            if (saveRes.data.success) {
-                toast.success('Adjustment of Advances Record saved successfully!');
-                navigate('/returns/gstr1/adjadvances');
-            } else {
-                toast.error('Failed to save record');
-            }
+            toast.success('Adjustment of Advances Record saved successfully!');
+            navigate('/returns/gstr1/adjadvances');
         } catch (err) {
             toast.error('Error saving: ' + err.message);
         } finally {

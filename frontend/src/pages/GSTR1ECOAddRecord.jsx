@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1ECOSupplies.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 
 const ECO_MASTER = {
@@ -189,27 +190,31 @@ const GSTR1ECOAddRecord = () => {
 
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-            const tabName = type === 'TCS' ? 'GSTR1_ECO_TCS' : 'GSTR1_ECO_PAY';
 
-            // Get existing records
-            const getRes = await api.get(`/forms/tab/${trn}/${tabName}`);
-            let records = [];
-            if (getRes.data.success && getRes.data.data) {
-                records = getRes.data.data.records || (Array.isArray(getRes.data.data) ? getRes.data.data : []);
-            }
-
-            const newRecord = { ...formData, id: Date.now() };
-            const updatedRecords = [...records, newRecord];
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName,
-                data: { records: updatedRecords }
-            });
+                eco_type: type,
+                eco_gstin: formData.gstin,
+                eco_name: formData.tradeName,
+                total_value: formData.netValue,
+                taxable_value: formData.netValue,
+                rate: '',
+                supply_type: 'Inter-State',
+                item_details: {
+                    integratedTax: formData.integratedTax,
+                    centralTax: formData.centralTax,
+                    stateTax: formData.stateTax,
+                    cess: formData.cess
+                }
+            };
 
-            if (saveRes.data.success) {
+            const res = await gstr1Service.saveGstr1Record('gstr1_eco_supplies', payload);
+
+            if (res.success) {
                 toast.success('Record saved successfully!');
                 navigate(`/returns/gstr1/eco?type=${type}`);
+            } else {
+                toast.error('Failed to save record');
             }
         } catch (err) {
             toast.error('Error saving record');

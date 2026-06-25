@@ -1351,6 +1351,165 @@
             }
           ],
           "id": 1782280744284
+        },
+        {
+          "recipientGSTIN": "23456",
+          "recipientName": "ertyui",
+          "nameAsInMaster": "",
+          "invoiceNo": "34789",
+          "invoiceDate": "04/06/2026",
+          "totalInvoiceValue": "456",
+          "pos": "02-Himachal Pradesh",
+          "isDeemedExport": false,
+          "isSEZWithPayment": false,
+          "isSEZWithoutPayment": false,
+          "isReverseCharge": false,
+          "isIntraStateIGST": false,
+          "isDifferentialPercentage": false,
+          "supplyType": "Inter-State",
+          "itemDetails": [
+            {
+              "rate": "0%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "0.1%",
+              "taxableValue": "456789",
+              "integratedTax": "456.79",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "0.25%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "1%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "1.5%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "3%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "5%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "6%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "7.5%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "12%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "18%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "28%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            },
+            {
+              "rate": "40%",
+              "taxableValue": "",
+              "integratedTax": "",
+              "centralTax": "",
+              "stateTax": "",
+              "cess": ""
+            }
+          ],
+          "id": 1782372506664
+        }
+      ]
+    },
+    "GSTR1_B2CS_Invoices": {
+      "invoices": [
+        {
+          "pos": "32-Kerala",
+          "taxableValue": "100",
+          "rate": "5%",
+          "supplyType": "Intra-State",
+          "integratedTax": "",
+          "centralTax": "2.50",
+          "stateTax": "2.50",
+          "cess": "0.00"
+        }
+      ]
+    },
+    "GSTR1_B2CL_Invoices": {
+      "invoices": [
+        {
+          "isDifferential": false,
+          "pos": "32-Kerala",
+          "invoiceNo": "INV123",
+          "invoiceDate": "2026-03-10",
+          "supplyType": "Intra-State",
+          "totalInvoiceValue": "1000",
+          "itemDetails": [
+            {
+              "rate": "18%",
+              "taxableValue": "800",
+              "integratedTax": "",
+              "centralTax": "72.00",
+              "stateTax": "72.00",
+              "cess": "0.00"
+            }
+          ]
         }
       ]
     }

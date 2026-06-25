@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1Dashboard.css'; // Reusing info block and basic styles
+import './GSTR1ExportsDashboard.css'; // Exports specific styles
 import api from '../api/axios';
 import PageLoader from '../components/PageLoader';
 
@@ -124,21 +125,22 @@ const GSTR1ExportsDashboard = () => {
             {showModal && (
                 <div className="exports-modal-overlay">
                     <div className="exports-modal-content">
-                        <h3 className="exports-modal-title">Please confirm to below guidelines for refund of IGST paid on export of goods:</h3>
+                        <h3 className="exports-modal-title">Please confirm below guidelines for refund of IGST paid on export of goods:</h3>
                         <ol className="exports-modal-list">
-                            <li>Invoice data for export of goods is provided in Table 6A of GSTR 1 for the relevant tax period</li>
-                            <li>Invoice numbers provided in Table-6A of GSTR 1 are same as that of the Invoice details given In Shipping Bill.
+                            <li>Invoice data for export of goods is provided in Table 6A of GSTR-1 for the relevant tax period.</li>
+                            <li>Invoice numbers provided in Table-6A of GSTR-1 are same as that of the invoice details given in Shipping Bill.
                                 <br /><strong>(The invoice with different invoice number/date than given in shipping bill will be rejected by ICEGATE)</strong>
                             </li>
-                            <li>Select With payment of tax from the GST Payment drop down when filling the invoice details
+                            <li>Select With payment of tax from the GST Payment drop down when filling the invoice details.
                                 <br /><strong>(Invoices selected as without payment of tax are not eligible for refund from ICEGATE)</strong>
                             </li>
                             <li>Shipping bill number, shipping bill date and port code are specified mandatorily and correctly, in case of export of goods.
                                 <br /><strong>(Invoices, which don't have these details, shall not be sent to ICEGATE for further processing)</strong>
                             </li>
-                            <li>Port code is alphanumeric six character code as prescribed by ICEGATE. Refer to list given by ICEGATE at
+                            <li>Port code is alphanumeric six character code as prescribed by ICEGATE.
+                                <br />Refer to the list given by ICEGATE at:
                                 <br /><a href="https://www.icegate.gov.in/SMTPList.html" target="_blank" rel="noopener noreferrer">https://www.icegate.gov.in/SMTPList.html</a>
-                                <br /><strong>(Invoice, which have incorrect port code, are likely to get rejected by ICEGATE)</strong>
+                                <br /><br /><strong>(Invoice, which have incorrect port code, are likely to get rejected by ICEGATE)</strong>
                             </li>
                         </ol>
                         <div className="exports-modal-actions">
@@ -152,8 +154,8 @@ const GSTR1ExportsDashboard = () => {
 
             {/* Footer Bar */}
             <footer className="dashboard-footer-bar">
-                <div className="footer-left">© 2025-26 Goods and Services Tax Network</div>
-                <div className="footer-center">Site Last Updated on 24-01-2026</div>
+                <div className="footer-left">© 2026-27 Goods and Services Tax Network</div>
+                <div className="footer-center">Site Last Updated on 03-05-2026</div>
                 <div className="footer-right">Designed &amp; Developed by GSTN</div>
             </footer>
 

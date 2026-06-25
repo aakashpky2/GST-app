@@ -33,15 +33,26 @@ const GSTR2AAmendmentsB2B = () => {
                     }));
                 }
 
-                // Mock Fetch Amendments
-                const mockInvoices = [];
-                /*
-                const mockInvoices = [
-                    { id: 1, supplierGstin: '07AAACA1234A1Z5', supplierName: 'ABC CORP', originalInvoiceNum: 'INV-101', revisedInvoiceNum: 'INV-101-R', invoiceDate: '16/03/2026', invoiceValue: '55000.00', taxableValue: '45000.00', igst: '8100.00', cgst: '0.00', sgst: '0.00', cess: '0.00', filingStatus: 'Filed' },
-                ];
-                */
-                
-                setInvoices(mockInvoices);
+                // Fetch real GSTR-2A Amended Invoices
+                const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+                const res = await api.get(`/gstr2a/amended/${trn}`);
+                if (res.data?.success) {
+                    const mapped = (res.data.data || []).map(r => ({
+                        supplierGstin: r.supplier_gstin,
+                        supplierName: r.supplier_name,
+                        originalInvoiceNum: r.source_gstr1_id?.split('_').pop() || '-',
+                        revisedInvoiceNum: r.invoice_number,
+                        invoiceDate: r.invoice_date,
+                        invoiceValue: (parseFloat(r.taxable_value) + parseFloat(r.total_tax)).toFixed(2),
+                        taxableValue: parseFloat(r.taxable_value).toFixed(2),
+                        igst: parseFloat(r.igst).toFixed(2),
+                        cgst: parseFloat(r.cgst).toFixed(2),
+                        sgst: parseFloat(r.sgst).toFixed(2),
+                        cess: parseFloat(r.cess).toFixed(2),
+                        filingStatus: 'Filed'
+                    }));
+                    setInvoices(mapped);
+                }
             } catch (err) {
                 console.warn('Failed to fetch data', err);
             } finally {

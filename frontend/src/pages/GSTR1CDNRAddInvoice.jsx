@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1CDNRAddInvoice.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 import CustomDatePicker from '../components/CustomDatePicker';
 
@@ -144,23 +145,22 @@ const GSTR1CDNRAddInvoice = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
 
-            // Fetch existing CDNR invoices
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_CDNR_Invoices`);
-            let existingInvoices = [];
-            if (res.data.success && res.data.data) {
-                existingInvoices = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-            }
-
-            const newInvoice = { ...formData, id: Date.now() };
-            existingInvoices.push(newInvoice);
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName: 'GSTR1_CDNR_Invoices',
-                data: { invoices: existingInvoices }
-            });
+                recipient_gstin: formData.recipientGstin,
+                recipient_name: formData.recipientName,
+                note_number: formData.noteNumber,
+                note_date: formData.noteDate,
+                note_type: formData.noteType,
+                place_of_supply: formData.pos,
+                note_value: formData.noteValue,
+                supply_type: formData.supplyType,
+                item_details: formData.itemDetails.filter(item => item.taxableValue !== '')
+            };
 
-            if (saveRes.data.success) {
+            const res = await gstr1Service.saveGstr1Record('gstr1_cdnr_invoices', payload);
+
+            if (res.success) {
                 toast.success('CDNR Record saved successfully!');
                 navigate('/returns/gstr1/cdnr');
             } else {

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css'; // Reusing nav and footer styles
 import './GSTR1B2CSAddInvoice.css'; // Specific styles for this page
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 
 const GSTR1B2CSAddInvoice = () => {
@@ -93,7 +94,7 @@ const GSTR1B2CSAddInvoice = () => {
     };
 
     const handleSave = async () => {
-        if (!formData.pos || !formData.taxableValue || !formData.rate) {
+        if (!formData.pos || formData.pos === 'Select' || !formData.taxableValue || !formData.rate) {
             toast.error('Please fill all mandatory fields marked with *');
             return;
         }
@@ -102,23 +103,26 @@ const GSTR1B2CSAddInvoice = () => {
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
 
-            // Fetch existing B2CS invoices
-            const res = await api.get(`/forms/tab/${trn}/GSTR1_B2CS_Invoices`);
-            let existingInvoices = [];
-            if (res.data.success && res.data.data) {
-                existingInvoices = res.data.data.invoices || (Array.isArray(res.data.data) ? res.data.data : []);
-            }
-
-            const newInvoice = { ...formData, id: Date.now() };
-            existingInvoices.push(newInvoice);
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName: 'GSTR1_B2CS_Invoices',
-                data: { invoices: existingInvoices }
-            });
+                pos: formData.pos,
+                taxable_value: formData.taxableValue,
+                rate: formData.rate,
+                supply_type: formData.supplyType,
+                is_nil_rated_exempt: formData.rate === '0%',
+                item_details: [{
+                   rate: formData.rate,
+                   taxableValue: formData.taxableValue,
+                   integratedTax: formData.integratedTax,
+                   centralTax: formData.centralTax,
+                   stateTax: formData.stateTax,
+                   cess: formData.cess
+                }]
+            };
 
-            if (saveRes.data.success) {
+            const res = await gstr1Service.saveGstr1Record('gstr1_b2cs_invoices', payload);
+
+            if (res.success) {
                 toast.success('B2CS Record saved successfully!');
                 navigate('/returns/gstr1/b2cs');
             } else {

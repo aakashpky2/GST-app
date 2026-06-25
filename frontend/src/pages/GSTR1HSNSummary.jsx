@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1HSNSummary.css';
 import api from '../api/axios';
+import gstr1Service from '../services/gstr1Service';
 import toast, { Toaster } from 'react-hot-toast';
 
 const GSTR1HSNSummary = () => {
@@ -124,24 +125,54 @@ const GSTR1HSNSummary = () => {
         setIsSaving(true);
         try {
             const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-            const tabName = activeTab === 'B2B' ? 'GSTR1_HSN_B2B' : 'GSTR1_HSN_B2C';
 
-            const newRecord = { ...formData, id: Date.now() };
-            const updatedRecords = [...records, newRecord];
-
-            const saveRes = await api.post('/forms/save-tab', {
+            const payload = {
                 trn,
-                tabName,
-                data: { records: updatedRecords }
-            });
+                hsn: formData.hsn,
+                description: formData.descriptionAsPerHSN,
+                uqc: formData.uqc,
+                total_quantity: formData.totalQuantity,
+                total_value: formData.totalValue || 0,
+                taxable_value: formData.totalTaxableValue,
+                rate: formData.rate,
+                supply_type: activeTab,
+                item_details: {
+                    integratedTax: formData.integratedTax,
+                    centralTax: formData.centralTax,
+                    stateTax: formData.stateTax,
+                    cess: formData.cess
+                }
+            };
 
-            if (saveRes.data.success) {
+            const res = await gstr1Service.saveGstr1Record('gstr1_hsn_summary', payload);
+
+            if (res.success) {
                 toast.success('HSN Record added successfully!');
+                
+                // For UI state immediately:
+                const newRecord = { ...formData, id: res.data.id || Date.now() };
+                const updatedRecords = [...records, newRecord];
                 setRecords(updatedRecords);
-                handleReset();
+
+                // Reset form
+                setFormData({
+                    hsn: '',
+                    descriptionAsPerHSN: '',
+                    uqc: '',
+                    totalQuantity: '',
+                    totalValue: '',
+                    totalTaxableValue: '',
+                    integratedTax: '',
+                    centralTax: '',
+                    stateTax: '',
+                    cess: '',
+                    rate: ''
+                });
+            } else {
+                toast.error('Failed to add record');
             }
         } catch (err) {
-            toast.error('Error adding record');
+            toast.error('Error adding: ' + err.message);
         } finally {
             setIsSaving(false);
         }

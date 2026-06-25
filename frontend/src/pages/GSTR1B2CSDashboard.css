@@ -1,7 +1,6 @@
 /* B2CS Dashboard Specific Styles */
 .b2cs-main-content {
-    margin-top: 15px;
-    padding: 0 120px;
+    /* padding and margin handled via inline styles for exact control */
 }
 
 /* Header Banner Variation */
@@ -22,59 +21,59 @@
 
 .b2cs-title {
     color: white;
-    font-size: 18px;
+    font-size: 28px;
     font-weight: 500;
     margin: 0;
 }
 
-/* Empty records container */
 .b2cs-empty-records {
-    background-color: #e0f2fe;
-    /* light blue matching screenshot */
-    padding: 30px 20px;
-    margin: 20px 0;
-    border: 1px solid #bae6fd;
-    color: #4b5563;
+    background-color: #edf7ff;
+    border: 1px solid #d6eaf8;
+    color: #2c5e8a;
+    padding: 20px;
+    margin: 0;
     font-size: 14px;
 }
 
-/* Actions below empty records */
 .b2cs-actions-row {
     display: flex;
     justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 15px;
+    padding: 20px 20px 20px 0;
 }
 
 .b2cs-btn-primary {
-    background-color: #2b4b7c;
+    background-color: #1d4f91;
     color: white;
     border: none;
-    padding: 10px 20px;
-    font-size: 13px;
-    font-weight: bold;
+    height: 42px;
+    padding: 0 25px;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     text-transform: uppercase;
+    border-radius: 0;
 }
 
 .b2cs-btn-primary:hover {
-    background-color: #1b2e4b;
+    background-color: #153a6b;
 }
 
 .b2cs-btn-outline {
     background-color: #fff;
-    color: #000;
-    border: 1px solid #777;
-    padding: 10px 25px;
-    font-size: 13px;
-    font-weight: bold;
+    color: #333;
+    border: 1px solid #999;
+    height: 42px;
+    padding: 0 25px;
+    font-size: 14px;
+    font-weight: 500;
     cursor: pointer;
-    background-clip: padding-box;
+    text-transform: uppercase;
+    border-radius: 0;
 }
 
 .b2cs-btn-outline:hover {
-    background-color: #f9fafb;
+    background-color: #f5f5f5;
 }
 
 /* Records Table */
