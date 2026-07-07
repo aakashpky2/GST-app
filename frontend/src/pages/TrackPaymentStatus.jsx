@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const TrackPaymentStatus = () => {
     const [gstin, setGstin] = useState('');
@@ -28,16 +29,8 @@ const TrackPaymentStatus = () => {
         setLoading(true);
 
         try {
-            // Using absolute URL to ensure we hit the right backend locally
-            const response = await fetch('http://localhost:5001/api/payments/track-status', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ gstin, cpin })
-            });
-
-            const data = await response.json();
+            const response = await api.post('/payments/track-status', { gstin, cpin });
+            const data = response.data;
 
             if (data.success && data.data) {
                 setPaymentDetails(data.data);

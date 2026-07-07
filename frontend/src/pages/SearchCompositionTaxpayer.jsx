@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -28,7 +29,6 @@ const SearchCompositionTaxpayer = () => {
         "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
     ];
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     const handleGstinChange = (e) => {
         let value = e.target.value.toUpperCase();
@@ -72,20 +72,16 @@ const SearchCompositionTaxpayer = () => {
         setCurrentPage(1);
 
         try {
-            const response = await fetch(`${apiUrl}/api/search-taxpayer/composition`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    searchType,
-                    optStatus,
-                    gstin: searchType === 'GSTIN' ? gstin : undefined,
-                    state: searchType === 'State' ? state : undefined
-                })
+            const response = await api.post('/search-taxpayer/composition', {
+                searchType,
+                optStatus,
+                gstin: searchType === 'GSTIN' ? gstin : undefined,
+                state: searchType === 'State' ? state : undefined
             });
             
-            const data = await response.json();
+            const data = response.data;
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setResults(data.data);
             } else {
                 setErrors({ general: data.error || 'No Composition Taxpayer Records Found.' });

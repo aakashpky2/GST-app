@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const SearchTaxpayerPAN = () => {
     const [pan, setPan] = useState('');
@@ -7,7 +8,6 @@ const SearchTaxpayerPAN = () => {
     const [loading, setLoading] = useState(false);
     const [taxpayer, setTaxpayer] = useState(null);
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     const handleInputChange = (e) => {
         let value = e.target.value.toUpperCase();
@@ -37,10 +37,10 @@ const SearchTaxpayerPAN = () => {
         setTaxpayer(null);
 
         try {
-            const response = await fetch(`${apiUrl}/api/search-taxpayer/pan/${pan}`);
-            const data = await response.json();
+            const response = await api.get(`/search-taxpayer/pan/${pan}`);
+            const data = response.data;
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setTaxpayer(data.data);
             } else {
                 setError(data.error || 'No taxpayer found for the entered PAN.');

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -10,7 +11,6 @@ const SearchTaxpayerGSTIN = () => {
     const [taxpayer, setTaxpayer] = useState(null);
     const [copySuccess, setCopySuccess] = useState(false);
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     const handleInputChange = (e) => {
         let value = e.target.value.toUpperCase();
@@ -41,10 +41,10 @@ const SearchTaxpayerGSTIN = () => {
         setCopySuccess(false);
 
         try {
-            const response = await fetch(`${apiUrl}/api/search-taxpayer/${gstin}`);
-            const data = await response.json();
+            const response = await api.get(`/search-taxpayer/${gstin}`);
+            const data = response.data;
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setTaxpayer(data.data);
             } else {
                 setError(data.error || 'No Taxpayer Found for the Entered GSTIN/UIN.');

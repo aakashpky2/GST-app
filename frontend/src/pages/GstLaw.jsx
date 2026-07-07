@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const GstLaw = () => {
     const [links, setLinks] = useState([]);
@@ -8,10 +9,9 @@ const GstLaw = () => {
     useEffect(() => {
         const fetchLinks = async () => {
             try {
-                const response = await fetch('http://localhost:5001/api/gst-law/active');
-                const data = await response.json();
-                if (data.success) {
-                    setLinks(data.data);
+                const response = await api.get('/gst-law/active');
+                if (response.data.success) {
+                    setLinks(response.data.data);
                 }
             } catch (err) {
                 console.error("Error fetching GST Law links:", err);

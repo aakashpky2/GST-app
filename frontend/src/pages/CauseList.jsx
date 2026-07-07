@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import api from '../api/axios';
 
 const states = [
     "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam",
@@ -58,18 +59,14 @@ const CauseList = () => {
         setCurrentPage(1);
 
         try {
-            const response = await fetch('http://localhost:5001/api/cause-list/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    authority_type: authorityType,
-                    state: state,
-                    jurisdiction: jurisdiction,
-                    date: date
-                })
+            const response = await api.post('/cause-list/search', {
+                authority_type: authorityType,
+                state: state,
+                jurisdiction: jurisdiction,
+                date: date
             });
 
-            const data = await response.json();
+            const data = response.data;
 
             if (data.success) {
                 setResults(data.data);
@@ -127,7 +124,9 @@ const CauseList = () => {
             jurisdiction: jurisdiction,
             date: date
         }).toString();
-        window.location.href = `http://localhost:5001/api/cause-list/download-excel?${queryParams}`;
+        let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        if (apiUrl && !apiUrl.endsWith('/api')) { apiUrl = `${apiUrl.replace(/\/$/, '')}/api`; }
+        window.location.href = `${apiUrl}/cause-list/download-excel?${queryParams}`;
     };
 
     const downloadPDF = () => {

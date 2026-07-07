@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../api/axios';
 
 const ManageGstStatistics = () => {
     const [statistics, setStatistics] = useState([]);
@@ -23,16 +24,16 @@ const ManageGstStatistics = () => {
         report_file: ''
     });
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const statRes = await fetch(`${apiUrl}/api/gst-statistics`);
-            const statData = await statRes.json();
+            const statRes = await api.get('/gst-statistics');
+            const statData = statRes.data;
             
-            const repRes = await fetch(`${apiUrl}/api/gst-statistics/reports`);
-            const repData = await repRes.json();
+            const repRes = await api.get('/gst-statistics/reports');
+            const repData = repRes.data;
             
             if (statData.success) setStatistics(statData.data);
             if (repData.success) setReports(repData.data);
@@ -60,12 +61,8 @@ const ManageGstStatistics = () => {
         if (!statForm.financial_year) return;
 
         try {
-            const response = await fetch(`${apiUrl}/api/gst-statistics`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(statForm)
-            });
-            const data = await response.json();
+            const response = await api.post('/gst-statistics', statForm);
+            const data = response.data;
             if (data.success) {
                 setStatForm({
                     financial_year: '',
@@ -89,12 +86,8 @@ const ManageGstStatistics = () => {
         if (!reportForm.report_name || !reportForm.report_file) return;
 
         try {
-            const response = await fetch(`${apiUrl}/api/gst-statistics/reports`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(reportForm)
-            });
-            const data = await response.json();
+            const response = await api.post('/gst-statistics/reports', reportForm);
+            const data = response.data;
             if (data.success) {
                 setReportForm({ report_name: '', report_file: '' });
                 fetchData();
@@ -107,8 +100,8 @@ const ManageGstStatistics = () => {
     const deleteStatistic = async (id) => {
         if (!window.confirm("Are you sure you want to delete this financial year?")) return;
         try {
-            const response = await fetch(`${apiUrl}/api/gst-statistics/${id}`, { method: 'DELETE' });
-            const data = await response.json();
+            const response = await api.delete(`/gst-statistics/${id}`);
+            const data = response.data;
             if (data.success) fetchData();
         } catch (err) {
             console.error(err);
@@ -118,8 +111,8 @@ const ManageGstStatistics = () => {
     const deleteReport = async (id) => {
         if (!window.confirm("Are you sure you want to delete this report?")) return;
         try {
-            const response = await fetch(`${apiUrl}/api/gst-statistics/reports/${id}`, { method: 'DELETE' });
-            const data = await response.json();
+            const response = await api.delete(`/gst-statistics/reports/${id}`);
+            const data = response.data;
             if (data.success) fetchData();
         } catch (err) {
             console.error(err);

@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const states = [
     "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam",
@@ -56,20 +58,16 @@ const LocateGstp = () => {
         setResults(null);
 
         try {
-            const response = await fetch('http://localhost:5001/api/gstp/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    searchType, 
-                    idValue: idValue.trim(), 
-                    nameValue: nameValue.trim(), 
-                    stateValue, 
-                    districtValue,
-                    pincodeValue: pincodeValue.trim()
-                })
+            const response = await api.post('/gstp/search', { 
+                searchType, 
+                idValue: idValue.trim(), 
+                nameValue: nameValue.trim(), 
+                stateValue, 
+                districtValue,
+                pincodeValue: pincodeValue.trim()
             });
 
-            const data = await response.json();
+            const data = response.data;
 
             if (data.success) {
                 setResults(data.data);

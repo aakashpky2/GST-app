@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const GSTStatistics = () => {
     const [statistics, setStatistics] = useState([]);
@@ -11,16 +12,11 @@ const GSTStatistics = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Adjust the port if different; using standard API prefix for proxy/direct calls.
-                // Depending on the vite config proxy, it might just be /api/...
-                // Here we'll assume the standard base URL used by other components, falling back to localhost:5001
-                const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+                const statRes = await api.get('/gst-statistics');
+                const statData = statRes.data;
                 
-                const statRes = await fetch(`${apiUrl}/api/gst-statistics`);
-                const statData = await statRes.json();
-                
-                const repRes = await fetch(`${apiUrl}/api/gst-statistics/reports`);
-                const repData = await repRes.json();
+                const repRes = await api.get('/gst-statistics/reports');
+                const repData = repRes.data;
                 
                 if (statData.success) setStatistics(statData.data);
                 if (repData.success) setReports(repData.data);

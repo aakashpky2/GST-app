@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const SearchHsnCode = () => {
     const [searchMode, setSearchMode] = useState('hsn');
@@ -31,13 +32,9 @@ const SearchHsnCode = () => {
         setSortConfig({ key: null, direction: 'asc' });
 
         try {
-            const response = await fetch('http://localhost:5001/api/hsn/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ mode: searchMode, query: query.trim(), category: searchMode === 'description' ? searchUnder : undefined })
-            });
+            const response = await api.post('/hsn/search', { mode: searchMode, query: query.trim(), category: searchMode === 'description' ? searchUnder : undefined });
 
-            const data = await response.json();
+            const data = response.data;
 
             if (data.success && data.data) {
                 setResults(data.data);
@@ -52,8 +49,9 @@ const SearchHsnCode = () => {
     };
 
     const handleDownload = () => {
-        // Direct link to download endpoint
-        window.location.href = 'http://localhost:5001/api/hsn/download';
+        let apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        if (apiUrl && !apiUrl.endsWith('/api')) { apiUrl = `${apiUrl.replace(/\/$/, '')}/api`; }
+        window.location.href = `${apiUrl}/hsn/download`;
     };
 
     const handleSort = (key) => {

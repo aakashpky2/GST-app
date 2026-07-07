@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const SearchTaxpayerTempID = () => {
     const [temporaryId, setTemporaryId] = useState('');
@@ -22,7 +23,6 @@ const SearchTaxpayerTempID = () => {
         "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
     ];
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
     const handleMobileChange = (e) => {
         const val = e.target.value.replace(/[^0-9]/g, '');
@@ -60,21 +60,15 @@ const SearchTaxpayerTempID = () => {
         setErrors({});
 
         try {
-            const response = await fetch(`${apiUrl}/api/search-taxpayer/temp-id`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    temporaryId,
-                    state: temporaryId ? undefined : state,
-                    mobileNumber: temporaryId ? undefined : mobileNumber
-                })
+            const response = await api.post('/search-taxpayer/temp-id', {
+                temporaryId,
+                state: temporaryId ? undefined : state,
+                mobileNumber: temporaryId ? undefined : mobileNumber
             });
             
-            const data = await response.json();
+            const data = response.data;
 
-            if (response.ok && data.success) {
+            if (data.success) {
                 setTaxpayer(data.data);
             } else {
                 setErrors({ general: data.error || 'No record found for the entered details.' });

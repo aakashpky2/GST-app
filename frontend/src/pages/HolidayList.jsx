@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 
 const states = [
     "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam",
@@ -62,13 +63,9 @@ const HolidayList = () => {
         setExpandedMonths({}); // Reset expansions
 
         try {
-            const response = await fetch('http://localhost:5001/api/holidays/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ year, state })
-            });
+            const response = await api.post('/holidays/search', { year, state });
 
-            const data = await response.json();
+            const data = response.data;
 
             if (data.success) {
                 setResults(data.data);

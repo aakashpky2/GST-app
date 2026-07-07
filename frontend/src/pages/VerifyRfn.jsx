@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
@@ -31,13 +32,8 @@ const VerifyRfn = () => {
         setResult(null);
 
         try {
-            const response = await fetch('http://localhost:5001/api/rfn/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rfn_number: rfnNumber.trim() })
-            });
-
-            const data = await response.json();
+            const response = await api.post('/rfn/verify', { rfn_number: rfnNumber.trim() });
+            const data = response.data;
 
             if (data.success && data.data) {
                 setResult(data.data);

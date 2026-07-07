@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import api from '../../api/axios';
 
 const ManageGstLinks = () => {
     const [links, setLinks] = useState([]);
@@ -9,10 +10,9 @@ const ManageGstLinks = () => {
     const fetchLinks = async () => {
         setLoading(true);
         try {
-            const response = await fetch('http://localhost:5001/api/gst-law/all');
-            const data = await response.json();
-            if (data.success) {
-                setLinks(data.data);
+            const response = await api.get('/gst-law/all');
+            if (response.data.success) {
+                setLinks(response.data.data);
             }
         } catch (err) {
             console.error(err);
@@ -30,13 +30,8 @@ const ManageGstLinks = () => {
         if (!newName || !newUrl) return;
 
         try {
-            const response = await fetch('http://localhost:5001/api/gst-law', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: newName, url: newUrl, is_active: true })
-            });
-            const data = await response.json();
-            if (data.success) {
+            const response = await api.post('/gst-law', { name: newName, url: newUrl, is_active: true });
+            if (response.data.success) {
                 setNewName('');
                 setNewUrl('');
                 fetchLinks();
@@ -48,13 +43,8 @@ const ManageGstLinks = () => {
 
     const toggleStatus = async (id, currentStatus) => {
         try {
-            const response = await fetch(`http://localhost:5001/api/gst-law/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ is_active: !currentStatus })
-            });
-            const data = await response.json();
-            if (data.success) {
+            const response = await api.put(`/gst-law/${id}`, { is_active: !currentStatus });
+            if (response.data.success) {
                 fetchLinks();
             }
         } catch (err) {
@@ -65,9 +55,8 @@ const ManageGstLinks = () => {
     const handleDelete = async (id) => {
         if (!window.confirm("Are you sure you want to delete this link?")) return;
         try {
-            const response = await fetch(`http://localhost:5001/api/gst-law/${id}`, { method: 'DELETE' });
-            const data = await response.json();
-            if (data.success) {
+            const response = await api.delete(`/gst-law/${id}`);
+            if (response.data.success) {
                 fetchLinks();
             }
         } catch (err) {

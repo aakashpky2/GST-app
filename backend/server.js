@@ -25,7 +25,24 @@ const app = express();
 app.use(express.json());
 
 // Enable CORS
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5000',
+  'http://localhost:5001',
+  'https://gst-app-gamma.vercel.app',
+  process.env.FRONTEND_URL
+];
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('CORS blocked origin'), false);
+  },
+  credentials: true
+}));
 
 // Route files
 const authRoutes = require('./routes/auth');
@@ -46,6 +63,11 @@ const gstr2aRoutes = require('./routes/gstr2a');
 const gstr1Routes = require('./routes/gstr1');
 
 // Mount routers
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date(), service: 'gst-app-backend' });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/registration', registrationRoutes);
 app.use('/api/business-details', businessDetailsRoutes);
