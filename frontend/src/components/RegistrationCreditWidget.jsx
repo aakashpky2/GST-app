@@ -10,7 +10,8 @@ const RegistrationCreditWidget = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       // We are connecting to the CRM backend to get the real-time student credits.
-      const API_URL = 'http://localhost:5000/api';
+      const apiUrl = import.meta.env.VITE_CRM_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const API_URL = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl.replace(/\/$/, '')}/api`;
       const res = await axios.get(`${API_URL}/student/credits`, {
         headers: { Authorization: `Bearer ${token}` }
       });
