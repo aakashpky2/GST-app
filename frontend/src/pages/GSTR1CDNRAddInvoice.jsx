@@ -149,13 +149,23 @@ const GSTR1CDNRAddInvoice = () => {
                 trn,
                 recipient_gstin: formData.recipientGstin,
                 recipient_name: formData.recipientName,
+                name_in_master: formData.nameInMaster,
                 note_number: formData.noteNumber,
                 note_date: formData.noteDate,
                 note_type: formData.noteType,
-                place_of_supply: formData.pos,
                 note_value: formData.noteValue,
+                pos: formData.pos,
                 supply_type: formData.supplyType,
-                item_details: formData.itemDetails.filter(item => item.taxableValue !== '')
+                source: formData.source,
+                irn: formData.irn,
+                irn_date: formData.irnDate,
+                is_deemed_export: formData.deemedExports,
+                is_sez_with_payment: formData.sezWithPayment,
+                is_sez_without_payment: formData.sezWithoutPayment,
+                is_reverse_charge: formData.reverseCharge,
+                is_intra_state_igst: formData.intraStateIgst,
+                is_differential_rate: formData.differentialRate,
+                tax_items: formData.itemDetails.filter(item => item.taxableValue !== '')
             };
 
             const res = await gstr1Service.saveGstr1Record('gstr1_cdnr_invoices', payload);

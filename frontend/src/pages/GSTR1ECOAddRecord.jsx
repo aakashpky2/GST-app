@@ -195,17 +195,13 @@ const GSTR1ECOAddRecord = () => {
                 trn,
                 eco_type: type,
                 eco_gstin: formData.gstin,
-                eco_name: formData.tradeName,
-                total_value: formData.netValue,
-                taxable_value: formData.netValue,
-                rate: '',
-                supply_type: 'Inter-State',
-                item_details: {
-                    integratedTax: formData.integratedTax,
-                    centralTax: formData.centralTax,
-                    stateTax: formData.stateTax,
-                    cess: formData.cess
-                }
+                trade_name: formData.tradeName,
+                net_value: parseFloat(formData.netValue) || 0,
+                integrated_tax: parseFloat(formData.integratedTax) || 0,
+                central_tax: parseFloat(formData.centralTax) || 0,
+                state_tax: parseFloat(formData.stateTax) || 0,
+                cess: parseFloat(formData.cess) || 0,
+                updated_at: new Date().toISOString()
             };
 
             const res = await gstr1Service.saveGstr1Record('gstr1_eco_supplies', payload);

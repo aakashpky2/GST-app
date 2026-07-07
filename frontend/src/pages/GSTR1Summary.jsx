@@ -18,28 +18,70 @@ const GSTR1Summary = () => {
         const fetchSummary = async () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                
+
                 // Fetch live counts from Supabase
                 const countRes = await gstr1Service.getGstr1Counts(trn);
                 const c = countRes.data || {};
-                
+
+                // Fetch AdvTax records and aggregate
+                const advTaxRes = await gstr1Service.getGstr1Records('gstr1_adv_tax', trn);
+                const advTaxRecords = advTaxRes.success && advTaxRes.data ? advTaxRes.data : [];
+                const advTaxAgg = advTaxRecords.reduce((agg, rec) => {
+                    agg.gross += parseFloat(rec.gross_advance_received) || 0;
+                    agg.igst += parseFloat(rec.integrated_tax) || 0;
+                    agg.cgst += parseFloat(rec.central_tax) || 0;
+                    agg.sgst += parseFloat(rec.state_ut_tax) || 0;
+                    agg.cess += parseFloat(rec.cess) || 0;
+                    return agg;
+                }, { gross: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 });
+
+                // Fetch AdjAdvances records and aggregate
+                const adjAdvRes = await gstr1Service.getGstr1Records('gstr1_adj_advances', trn);
+                const adjAdvRecords = adjAdvRes.success && adjAdvRes.data ? adjAdvRes.data : [];
+                const adjAdvAgg = adjAdvRecords.reduce((agg, rec) => {
+                    agg.gross += parseFloat(rec.gross_advance_adjusted) || 0;
+                    agg.igst += parseFloat(rec.integrated_tax) || 0;
+                    agg.cgst += parseFloat(rec.central_tax) || 0;
+                    agg.sgst += parseFloat(rec.state_ut_tax) || 0;
+                    agg.cess += parseFloat(rec.cess) || 0;
+                    return agg;
+                }, { gross: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 });
+
                 setSummaryData({
-                   b2b: { records: c.b2b || 0 },
-                   b2bReverse: { records: 0 },
-                   sez: { records: 0 },
-                   deemedExports: { records: 0 },
-                   b2cl: { records: c.b2cl || 0 },
-                   exports: { records: c.exports || 0 },
-                   b2cs: { records: c.b2cs || 0 },
-                   nilRated: { records: c.nilRated || 0 },
-                   cdnr: { records: c.cdnr || 0 },
-                   cdnur: { records: c.cdnur || 0 },
-                   advTax: { records: c.advTax || 0 },
-                   adjAdvances: { records: c.adjAdvances || 0 },
-                   hsn: { records: c.hsn || 0 },
-                   documents: { records: c.documents || 0 },
-                   eco: { records: c.eco || 0 },
-                   sup95: { records: c.sup95 || 0 },
+                    b2b: { records: c.b2b || 0 },
+                    b2bReverse: { records: 0 },
+                    sez: { records: 0 },
+                    deemedExports: { records: 0 },
+                    b2cl: { records: c.b2cl || 0 },
+                    exports: { records: c.exports || 0 },
+                    b2cs: { records: c.b2cs || 0 },
+                    nilRated: { records: c.nilRated || 0 },
+                    cdnr: { records: c.cdnr || 0 },
+                    cdnur: { records: c.cdnur || 0 },
+                    advTax: {
+                        records: c.advTax || 0,
+                        value: advTaxAgg.gross,
+                        igst: advTaxAgg.igst,
+                        cgst: advTaxAgg.cgst,
+                        sgst: advTaxAgg.sgst,
+                        cess: advTaxAgg.cess
+                    },
+                    adjAdvances: {
+                        records: c.adjAdvances || 0,
+                        value: adjAdvAgg.gross,
+                        igst: adjAdvAgg.igst,
+                        cgst: adjAdvAgg.cgst,
+                        sgst: adjAdvAgg.sgst,
+                        cess: adjAdvAgg.cess
+                    },
+                    hsn: { records: c.hsn || 0 },
+                    documents: { records: c.documents || 0 },
+                    eco: { records: c.eco || 0 },
+                    sup95: { records: c.sup95 || 0 },
+                    rawRecords: {
+                        GSTR1_AdvTax_Invoices: { records: advTaxRecords },
+                        GSTR1_AdjAdvances_Invoices: { records: adjAdvRecords }
+                    }
                 });
             } catch (error) {
                 console.error("Failed to fetch summary counts", error);

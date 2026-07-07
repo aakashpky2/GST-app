@@ -61,27 +61,25 @@ exports.verifyOtp = async (req, res, next) => {
         if (emailOtp && mobileOtp && emailOtp.length === 6 && mobileOtp.length === 6) {
             const finalTrn = Math.floor(100000000000 + Math.random() * 900000000000) + 'TRN';
 
-            // Save the registration base data immediately to business_details
-            const { error: dbError } = await supabase
-                .from('business_details')
-                .upsert(
-                    {
-                        trn: finalTrn,
-                        email: email || null,
-                        mobile: mobile || null,
-                        legal_name: legalName || null,
-                        pan: pan || null,
-                        state_name: state || null,
-                        district: district || null,
-                        updated_at: new Date().toISOString(),
+            // We assume req.user is set by auth middleware, if not we need it from the request body or token
+            const userId = req.user ? req.user.id : (req.body.userId || '00000000-0000-0000-0000-000000000000');
 
-                    },
-                    { onConflict: 'trn' }
-                );
+            // Save the registration base data immediately to business_details and deduct 'reg_started' credit
+            const { error: dbError } = await supabase
+                .rpc('atomic_save_business_details_and_burn', {
+                    p_user_id: userId,
+                    p_trn: finalTrn,
+                    p_payload: { email, mobile, legalName, pan, stateName: state, district },
+                    p_action_key: 'reg_started'
+                });
 
             if (dbError) {
                 console.error("Failed to persist registration to business_details:", dbError.message);
                 
+                if (dbError.message && dbError.message.includes('INSUFFICIENT_CREDITS')) {
+                    return res.status(402).json({ success: false, message: 'Insufficient credits to start a new Registration.' });
+                }
+
                 if (dbError.message && dbError.message.includes('Project paused')) {
                     console.warn("DB PAUSED: Simulating registration success for TRN:", finalTrn);
                     return res.status(200).json({
@@ -125,6 +123,75 @@ exports.verifyOtp = async (req, res, next) => {
     }
 };
 
+// Helper functions for GSTIN generation
+const getStateCode = (stateName) => {
+    if (!stateName) return '97'; // Other Territory
+    const states = {
+        'jammu & kashmir': '01', 'himachal pradesh': '02', 'punjab': '03', 'chandigarh': '04',
+        'uttarakhand': '05', 'haryana': '06', 'delhi': '07', 'rajasthan': '08', 'uttar pradesh': '09',
+        'bihar': '10', 'sikkim': '11', 'arunachal pradesh': '12', 'nagaland': '13', 'manipur': '14',
+        'mizoram': '15', 'tripura': '16', 'meghalaya': '17', 'assam': '18', 'west bengal': '19',
+        'jharkhand': '20', 'odisha': '21', 'chhattisgarh': '22', 'madhya pradesh': '23', 'gujarat': '24',
+        'daman & diu': '25', 'dadra & nagar haveli': '26', 'maharashtra': '27', 'andhra pradesh (old)': '28',
+        'karnataka': '29', 'goa': '30', 'lakshadweep': '31', 'kerala': '32', 'tamil nadu': '33',
+        'puducherry': '34', 'andaman & nicobar islands': '35', 'telangana': '36', 'andhra pradesh': '37',
+        'ladakh': '38'
+    };
+    const code = states[stateName.toLowerCase()];
+    return code || '97';
+};
+
+const generateValidPan = () => {
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const nums = '0123456789';
+    let pan = '';
+    // 5 letters
+    for (let i = 0; i < 5; i++) pan += letters.charAt(Math.floor(Math.random() * letters.length));
+    // 4 numbers
+    for (let i = 0; i < 4; i++) pan += nums.charAt(Math.floor(Math.random() * nums.length));
+    // 1 letter
+    pan += letters.charAt(Math.floor(Math.random() * letters.length));
+    return pan;
+};
+
+const generateGSTINChecksum = (gstin14) => {
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let hash = 0;
+    for (let i = 0; i < gstin14.length; i++) {
+        let val = chars.indexOf(gstin14[i]);
+        let multiplier = (i % 2 === 0) ? 1 : 2;
+        let product = val * multiplier;
+        hash += Math.floor(product / 36) + (product % 36);
+    }
+    const remainder = hash % 36;
+    const checksumVal = (36 - remainder) % 36;
+    return chars[checksumVal];
+};
+
+const generateGSTIN = (stateName, existingPan) => {
+    const stateCode = getStateCode(stateName);
+    
+    // Validate existing PAN format (AAAAA9999A) or generate new one
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    let pan = existingPan && panRegex.test(existingPan.toUpperCase()) 
+        ? existingPan.toUpperCase() 
+        : generateValidPan();
+        
+    const entityCode = '1';
+    const fixedZ = 'Z';
+    
+    const gstin14 = stateCode + pan + entityCode + fixedZ;
+    const checksum = generateGSTINChecksum(gstin14);
+    
+    return {
+        gstin: gstin14 + checksum,
+        stateCode,
+        pan,
+        entityCode,
+        checksum
+    };
+};
+
 // @desc    Complete registration and generate final credentials
 // @route   POST /api/registration/complete
 // @access  Public
@@ -133,7 +200,6 @@ exports.completeRegistration = async (req, res, next) => {
         const { trn, legalName, pan } = req.body;
 
         if (!trn) {
-
             return res.status(400).json({ success: false, message: 'TRN is required' });
         }
 
@@ -152,24 +218,62 @@ exports.completeRegistration = async (req, res, next) => {
 
         const userEmail = bizData?.email || `gst_user_${Math.floor(Math.random()*10000)}@example.com`;
         const userMobile = bizData?.mobile || '0000000000';
-        const userPan = pan || bizData?.pan || 'TESTPAN1234';
-        const userState = bizData?.state_name || bizData?.state || 'Unknown';
+        const userState = bizData?.state_name || bizData?.state || 'Delhi'; // Fallback to Delhi
         const actualLegalName = legalName || bizData?.legal_name || 'GST Registrant';
+        const initialPan = pan || bizData?.pan;
 
         console.log(`[RegistrationComplete] Derived Data - Email: ${userEmail}, Mobile: ${userMobile}, State: ${userState}, Name: ${actualLegalName}`);
 
+        // 1. Generate GSTIN and its components
+        const gstinData = generateGSTIN(userState, initialPan);
 
-        // Generate username and password according to information in the form
-        // Username: First word of legal name + last 4 characters of PAN
-        const firstWord = actualLegalName.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
-        const panSuffix = userPan.length >= 4 ? userPan.slice(-4) : Math.floor(1000 + Math.random() * 9000);
-        const tempUsername = `${firstWord}${panSuffix}`;
+        // 2. Generate secure temporary username
+        const tempUsername = `GST${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 900 + 100)}`;
 
-        // Password: Capitalized first word + @ + random 4 digits
-        const capitalizedFirst = firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
-        const randomDigits = Math.floor(1000 + Math.random() * 9000);
-        const tempPassword = `${capitalizedFirst}@${randomDigits}`;
+        // 3. Generate strong password (8-12 chars, upper, lower, number, special)
+        const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        const lower = "abcdefghijklmnopqrstuvwxyz";
+        const nums = "0123456789";
+        const special = "@#$!%*?&";
+        
+        let tempPassword = "";
+        tempPassword += upper[Math.floor(Math.random() * upper.length)];
+        tempPassword += lower[Math.floor(Math.random() * lower.length)];
+        tempPassword += nums[Math.floor(Math.random() * nums.length)];
+        tempPassword += special[Math.floor(Math.random() * special.length)];
+        
+        const allChars = upper + lower + nums + special;
+        const remainingLen = Math.floor(Math.random() * 5) + 4; // 4 to 8 more characters (total 8-12)
+        for (let i = 0; i < remainingLen; i++) {
+            tempPassword += allChars[Math.floor(Math.random() * allChars.length)];
+        }
+        
+        // Shuffle the password
+        tempPassword = tempPassword.split('').sort(() => 0.5 - Math.random()).join('');
 
+        // Hash temporary password
+        const tempPasswordHash = await bcrypt.hash(tempPassword, 10);
+
+        const currentYear = new Date().getFullYear();
+        const financialYear = `${currentYear}-${(currentYear + 1).toString().slice(2)}`;
+
+        // Construct User Permissions (metadata)
+        const permissions = {
+            is_temporary_login: true,
+            first_login_completed: false,
+            pan: gstinData.pan, // Guaranteed valid PAN
+            user_type: 'Taxpayer',
+            state: userState,
+            state_code: gstinData.stateCode,
+            legal_name: actualLegalName,
+            mobile: userMobile,
+            trn: trn,
+            gstin: gstinData.gstin,
+            entity_code: gstinData.entityCode,
+            checksum: gstinData.checksum,
+            financial_year: financialYear,
+            registration_date: new Date().toISOString()
+        };
 
         // Insert/Update the user in the users table
         const { data: newUser, error: userError } = await supabase
@@ -177,36 +281,52 @@ exports.completeRegistration = async (req, res, next) => {
             .upsert(
                 {
                     username: tempUsername,
-                    password: await bcrypt.hash(tempPassword, 10),
+                    password_hash: tempPasswordHash,
                     email: userEmail,
-                    pan: userPan,
-                    user_type: 'Taxpayer',
-                    state: userState,
-                    legal_name: actualLegalName,
-                    mobile: userMobile,
-                    trn: trn
+                    role: 'student',
+                    status: 'active',
+                    permissions: permissions
                 },
                 { onConflict: 'username' }
             )
             .select();
 
-
-
-
-
-
-
         if (userError) {
             console.error("Failed to create final credentials:", userError);
             
-            if (userError.message && userError.message.includes('Project paused')) {
-                console.warn("DB PAUSED: Simulating credential creation success.");
+            if ((userError.message && userError.message.includes('Project paused')) || userError.code === '42501' || (userError.message && userError.message.includes('row-level security'))) {
+                console.warn("DB PAUSED OR RLS BLOCKED: Simulating credential creation success. Falling back to local_db.json");
+                
+                // Save to local fallback
+                const fs = require('fs');
+                const path = require('path');
+                const LOCAL_DB_PATH = path.join(__dirname, '../local_db.json');
+                try {
+                    let localDb = {};
+                    if (fs.existsSync(LOCAL_DB_PATH)) {
+                        localDb = JSON.parse(fs.readFileSync(LOCAL_DB_PATH, 'utf8') || '{}');
+                    }
+                    if (!localDb['temp_users']) localDb['temp_users'] = [];
+                    localDb['temp_users'].push({
+                        username: tempUsername,
+                        password_hash: tempPasswordHash,
+                        email: userEmail,
+                        role: 'student',
+                        status: 'active',
+                        permissions: permissions
+                    });
+                    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(localDb, null, 2), 'utf8');
+                } catch (e) {
+                    console.error("Failed to write user to local_db.json", e.message);
+                }
+
                 return res.status(200).json({
                     success: true,
-                    message: 'Registration completed (Simulated - Supabase Project Paused).',
+                    message: 'Registration completed (Simulated - Supabase RLS is blocking inserts).',
                     credentials: {
                         username: tempUsername,
-                        password: tempPassword
+                        password: tempPassword,
+                        gstin: gstinData.gstin
                     },
                     isSimulated: true
                 });
@@ -214,12 +334,11 @@ exports.completeRegistration = async (req, res, next) => {
             
             return res.status(500).json({ 
                 success: false, 
-                message: 'Database Error: Could not create credentials.',
+                message: 'Database Error: Could not create credentials. (RLS or permissions issue)',
                 details: userError.message,
                 hint: userError.hint
             });
         }
-
 
         // Delete the temporary TRN user so only the new credentials work
         await supabase
@@ -232,7 +351,8 @@ exports.completeRegistration = async (req, res, next) => {
             message: 'Registration completed successfully.',
             credentials: {
                 username: tempUsername,
-                password: tempPassword
+                password: tempPassword,
+                gstin: gstinData.gstin
             }
         });
     } catch (err) {

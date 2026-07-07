@@ -31,11 +31,31 @@ exports.protect = async (req, res, next) => {
             .eq('id', decoded.id)
             .single();
 
-        if (error || !user) {
-            return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
+        let foundUser = user;
+
+        if (error || !foundUser) {
+            // Check local fallback
+            const fs = require('fs');
+            const path = require('path');
+            const LOCAL_DB_PATH = path.join(__dirname, '../local_db.json');
+            let localUser = null;
+            try {
+                if (fs.existsSync(LOCAL_DB_PATH)) {
+                    const localDb = JSON.parse(fs.readFileSync(LOCAL_DB_PATH, 'utf8') || '{}');
+                    if (localDb.temp_users && Array.isArray(localDb.temp_users)) {
+                        localUser = localDb.temp_users.find(u => u.username === decoded.id || u.id === decoded.id);
+                    }
+                }
+            } catch(e) { }
+
+            if (localUser) {
+                foundUser = localUser;
+            } else {
+                return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
+            }
         }
 
-        req.user = user;
+        req.user = foundUser;
         next();
     } catch (err) {
         return res.status(401).json({ success: false, message: 'Not authorized to access this route' });

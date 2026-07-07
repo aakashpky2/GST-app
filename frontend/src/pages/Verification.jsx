@@ -172,8 +172,8 @@ const Verification = () => {
                 `}</style>
 
                 <div className="success-card">
-                    <div className="success-icon">✓</div>
-                    <h2 style={{ color: '#1a365d', marginBottom: '8px', fontSize: '28px' }}>Registration Submitted!</h2>
+                    <div className="success-icon">✅</div>
+                    <h2 style={{ color: '#1a365d', marginBottom: '8px', fontSize: '28px' }}>Registration Successful</h2>
                     <p style={{ color: '#4a5568', fontSize: '16px', lineHeight: '1.6' }}>
                         Your application has been successfully filed. As per policy, temporary login credentials have been generated for your account.
                     </p>
@@ -183,6 +183,17 @@ const Verification = () => {
                             <span style={{ fontSize: '18px' }}>🔐</span> Generated Credentials
                         </div>
                         
+                        <div className="cred-row">
+                            <span className="cred-label">GSTIN</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span className="cred-value" style={{ color: '#0d9488' }}>{credentials.gstin || 'PENDING'}</span>
+                                <button className="copy-btn" onClick={() => {
+                                    navigator.clipboard.writeText(credentials.gstin);
+                                    toast.success('GSTIN copied!');
+                                }}>Copy</button>
+                            </div>
+                        </div>
+
                         <div className="cred-row">
                             <span className="cred-label">Username</span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -206,8 +217,8 @@ const Verification = () => {
                         </div>
                     </div>
 
-                    <p style={{ fontSize: '13px', color: '#e53e3e', fontWeight: '600', marginBottom: '24px' }}>
-                        ⚠ IMPORTANT: Please save these credentials now. Original TRN login is now disabled.
+                    <p style={{ fontSize: '14px', color: '#e53e3e', fontWeight: '600', marginBottom: '24px' }}>
+                        ⚠ These are your temporary login credentials. Please save them carefully. They will be required to access your account.
                     </p>
 
                     <button 
@@ -225,7 +236,7 @@ const Verification = () => {
                         }}
                         onClick={() => navigate('/login')}
                     >
-                        CONTINUE TO LOGIN
+                        Login Now
                     </button>
                 </div>
             </RegistrationTabPage>

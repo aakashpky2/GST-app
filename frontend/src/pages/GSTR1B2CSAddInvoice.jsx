@@ -109,15 +109,7 @@ const GSTR1B2CSAddInvoice = () => {
                 taxable_value: formData.taxableValue,
                 rate: formData.rate,
                 supply_type: formData.supplyType,
-                is_nil_rated_exempt: formData.rate === '0%',
-                item_details: [{
-                   rate: formData.rate,
-                   taxableValue: formData.taxableValue,
-                   integratedTax: formData.integratedTax,
-                   centralTax: formData.centralTax,
-                   stateTax: formData.stateTax,
-                   cess: formData.cess
-                }]
+                is_differential_rate: formData.isDifferentialRate
             };
 
             const res = await gstr1Service.saveGstr1Record('gstr1_b2cs_invoices', payload);

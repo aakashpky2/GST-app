@@ -10,6 +10,9 @@ router.post('/generate', gstr2bController.generateGSTR2B);
 // List all snapshots for a TRN
 router.get('/snapshots/:trn', gstr2bController.getSnapshots);
 
+// GET GSTR-2B Summary for Dashboard Cards
+router.get('/summary/:trn', gstr2bController.getGSTR2BDashboardSummary);
+
 // GET GSTR-2B data for a TRN (latest snapshot or filtered by month/year)
 router.get('/:trn', gstr2bController.getGSTR2BData);
 

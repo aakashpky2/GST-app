@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import '../pages/BusinessDetails.css';
+import RegistrationCreditWidget from './RegistrationCreditWidget';
+import InsufficientCreditsModal from './InsufficientCreditsModal';
 
 const SUB_MENUS = {
     services: [
@@ -130,6 +133,23 @@ const ICONS = [
 const RegistrationTabPage = ({ activeIndex, breadcrumb, children }) => {
     const navigate = useNavigate();
     const [activeMenu, setActiveMenu] = useState(null);
+    const [showCreditModal, setShowCreditModal] = useState(false);
+
+    useEffect(() => {
+        // Global interceptor for this page to catch 402 Insufficient Credits
+        const interceptor = axios.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (error.response && error.response.status === 402) {
+                    setShowCreditModal(true);
+                }
+                return Promise.reject(error);
+            }
+        );
+        return () => {
+            axios.interceptors.response.eject(interceptor);
+        };
+    }, []);
 
     const expiryDate = localStorage.getItem('gst_expiry_date') || '—';
     const lastModified = localStorage.getItem('gst_reg_date') || '—';
@@ -150,7 +170,8 @@ const RegistrationTabPage = ({ activeIndex, breadcrumb, children }) => {
 
     return (
         <div className="bd-page" onClick={() => setActiveMenu(null)}>
-
+            <RegistrationCreditWidget />
+            <InsufficientCreditsModal isOpen={showCreditModal} onClose={() => setShowCreditModal(false)} />
 
             {/* Breadcrumb */}
             <div className="bd-breadcrumb">

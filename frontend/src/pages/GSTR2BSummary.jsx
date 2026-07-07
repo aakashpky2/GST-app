@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import toast, { Toaster } from 'react-hot-toast';
@@ -10,27 +10,24 @@ const GSTR2BSummary = () => {
     const monthParam = searchParams.get('month') || 'March';
 
     const [loading, setLoading] = useState(true);
-    const [generating, setGenerating] = useState(false);
     const [activeMainTab, setActiveMainTab] = useState('SUMMARY');
     const [activeSubTab, setActiveSubTab] = useState('itc_available');
     const [expandedRows, setExpandedRows] = useState({});
-    const [showGenerateModal, setShowGenerateModal] = useState(false);
-    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
+    
     const [profile, setProfile] = useState({
         gstin: '', legalName: '', tradeName: '', trn: ''
     });
-    const [snapshots, setSnapshots] = useState([]);
-    const [activeSnapshot, setActiveSnapshot] = useState(null);
-    const [gstr2bRecords, setGstr2bRecords] = useState({ b2b: [], cdnr: [], amended: [] });
-    const [gstr2aSums, setGstr2aSums] = useState({
-        b2bRegular: { taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-        cdnrNotes: { taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-        amended: { taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
+
+    const emptySum = { count: 0, taxableValue: 0, igst: 0, cgst: 0, sgst: 0, cess: 0, totalItc: 0 };
+    const [boxes, setBoxes] = useState({
+        allOtherItc: emptySum, registered: emptySum, isd: emptySum, revCharge: emptySum, 
+        importGoods: emptySum, sez: emptySum, cdnr: emptySum, amendments: emptySum,
+        itcNotAvailable: emptySum, itcAvailable: emptySum
     });
 
-    const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const [rawRecords, setRawRecords] = useState({
+        registered: [], isd: [], revCharge: [], importGoods: [], sez: [], cdnr: [], amendments: []
+    });
 
     useEffect(() => {
         loadAll();
@@ -52,433 +49,352 @@ const GSTR2BSummary = () => {
                 setProfile(p => ({ ...p, trn }));
             }
 
-            // Fetch GSTR-2B data (snapshots + records)
-            const gstr2bRes = await api.get(`/gstr2b/${trn}`);
+            const gstr2bRes = await api.get(`/gstr2b/summary/${trn}`);
             if (gstr2bRes.data?.success && gstr2bRes.data?.data) {
-                const d = gstr2bRes.data.data;
-                setSnapshots(d.snapshots || []);
-                setActiveSnapshot(d.activeSnapshot || null);
-                setGstr2bRecords({
-                    b2b: d.b2bRecords || [],
-                    cdnr: d.cdnrRecords || [],
-                    amended: d.amendedRecords || [],
-                });
+                setBoxes(gstr2bRes.data.data.boxes);
+                setRawRecords(gstr2bRes.data.data.rawRecords || {});
             }
 
-            // Fetch GSTR-2A live summary for ITC display
-            const gstr2aRes = await api.get(`/gstr2a/summary/${trn}`);
-            if (gstr2aRes.data?.success && gstr2aRes.data?.data) {
-                const { rawRecords } = gstr2aRes.data.data;
-                const sum = (records) => {
-                    let taxable = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
-                    (records || []).forEach(r => {
-                        taxable += parseFloat(r.taxable_value) || 0;
-                        igst += parseFloat(r.igst) || 0;
-                        cgst += parseFloat(r.cgst) || 0;
-                        sgst += parseFloat(r.sgst) || 0;
-                        cess += parseFloat(r.cess) || 0;
-                    });
-                    return { taxable, igst, cgst, sgst, cess };
-                };
-                setGstr2aSums({
-                    b2bRegular: sum(rawRecords?.b2bRecords),
-                    cdnrNotes: sum(rawRecords?.cdnrRecords),
-                    amended: sum(rawRecords?.amendedRecords),
-                });
-            }
         } catch (err) {
             console.error('GSTR-2B load failed:', err);
+            toast.error('Failed to load GSTR-2B Data');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleGenerateGSTR2B = async () => {
-        if (!profile.trn) {
-            toast.error('Could not determine TRN. Please try again.');
-            return;
-        }
-        setGenerating(true);
-        try {
-            const res = await api.post('/gstr2b/generate', {
-                trn: profile.trn,
-                month: selectedMonth,
-                year: selectedYear
-            });
-            if (res.data?.success) {
-                toast.success(res.data.message || 'GSTR-2B generated successfully!');
-                setShowGenerateModal(false);
-                await loadAll();
-            } else {
-                toast.error(res.data?.message || 'Failed to generate GSTR-2B.');
-            }
-        } catch (err) {
-            toast.error('Error: ' + (err.response?.data?.message || err.message));
-        } finally {
-            setGenerating(false);
-        }
-    };
-
     const fmt = (val) => parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const addSums = (...objs) => objs.reduce((a, b) => ({
-        taxable: (a.taxable||0) + (b.taxable||0),
-        igst: (a.igst||0) + (b.igst||0),
-        cgst: (a.cgst||0) + (b.cgst||0),
-        sgst: (a.sgst||0) + (b.sgst||0),
-        cess: (a.cess||0) + (b.cess||0)
-    }), { taxable:0, igst:0, cgst:0, sgst:0, cess:0 });
 
     const toggleRow = (id) => setExpandedRows(p => ({ ...p, [id]: !p[id] }));
-    const expandAll = () => setExpandedRows({ a1:true, a2:true, a3:true, a4:true, b1:true, na1:true, na2:true, na3:true, nb1:true });
-    const todayDate = new Date().toLocaleDateString('en-GB');
 
-    // Source data: prefer GSTR-2B snapshot if available, else GSTR-2A live data
-    const displaySums = activeSnapshot ? {
-        b2bRegular: {
-            taxable: parseFloat(activeSnapshot.total_taxable_value || 0),
-            igst: parseFloat(activeSnapshot.total_igst || 0),
-            cgst: parseFloat(activeSnapshot.total_cgst || 0),
-            sgst: parseFloat(activeSnapshot.total_sgst || 0),
-            cess: parseFloat(activeSnapshot.total_cess || 0),
-        },
-        cdnrNotes: { taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-        amended: { taxable: 0, igst: 0, cgst: 0, sgst: 0, cess: 0 },
-    } : gstr2aSums;
+    const InvoiceDetailTable = ({ records }) => {
+        if (!records || records.length === 0) {
+            return (
+                <tr style={{ background: '#fcfcfc' }}>
+                    <td colSpan="7" style={{ padding: '15px', textAlign: 'center', color: '#777', fontStyle: 'italic', fontSize: '12px', border: '1px solid #ddd' }}>
+                        No records available.
+                    </td>
+                </tr>
+            );
+        }
 
-    const partAI = addSums(displaySums.b2bRegular, displaySums.amended);
-    const partBI = displaySums.cdnrNotes;
-
-    const emptySum = { taxable:0, igst:0, cgst:0, sgst:0, cess:0 };
-
-    const ChildRow = ({ title, sumData }) => (
-        <tr style={{ backgroundColor: '#fcfcfc' }}>
-            <td></td>
-            <td style={{ paddingLeft: '35px', fontSize: '13px', color: '#555' }}>{title}</td>
-            <td></td>
-            <td style={{ textAlign: 'right' }}>{fmt(sumData?.igst)}</td>
-            <td style={{ textAlign: 'right' }}>{fmt(sumData?.cgst)}</td>
-            <td style={{ textAlign: 'right' }}>{fmt(sumData?.sgst)}</td>
-            <td style={{ textAlign: 'right' }}>{fmt(sumData?.cess)}</td>
-        </tr>
-    );
-
-    if (loading) return <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'Arial' }}>Loading GSTR-2B Data...</div>;
-
-    return (
-        <div style={{ backgroundColor: '#f3f4f6', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
-            <Toaster position="top-right" />
-
-            {/* Generate GSTR-2B Modal */}
-            {showGenerateModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ background: 'white', width: '480px', border: '1px solid #ccc', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                        <div style={{ background: '#1a237e', color: 'white', padding: '12px 18px', fontSize: '15px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>Generate GSTR-2B Snapshot</span>
-                            <button onClick={() => setShowGenerateModal(false)} style={{ background: 'none', border: 'none', color: 'white', fontSize: '14px', cursor: 'pointer' }}>Close</button>
-                        </div>
-                        <div style={{ padding: '20px' }}>
-                            <div style={{ background: '#fff3e0', border: '1px solid #ffb74d', padding: '10px', fontSize: '13px', marginBottom: '15px' }}>
-                                <strong>Important:</strong> Once generated, GSTR-2B for the selected month is <strong>locked</strong>. Later changes to GSTR-1 by suppliers will NOT affect this snapshot.
-                            </div>
-                            <div style={{ marginBottom: '15px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Select Month:</label>
-                                <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ccc', fontSize: '13px' }}>
-                                    {MONTHS.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
-                                </select>
-                            </div>
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 'bold', display: 'block', marginBottom: '5px' }}>Select Year:</label>
-                                <select value={selectedYear} onChange={e => setSelectedYear(parseInt(e.target.value))}
-                                    style={{ width: '100%', padding: '8px', border: '1px solid #ccc', fontSize: '13px' }}>
-                                    {[2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
-                                </select>
-                            </div>
-
-                            {/* Check if already exists */}
-                            {snapshots.some(s => s.snapshot_month === selectedMonth && s.snapshot_year === selectedYear) && (
-                                <div style={{ background: '#ffebee', border: '1px solid #ef9a9a', padding: '10px', fontSize: '13px', color: '#c62828', marginBottom: '15px' }}>
-                                    GSTR-2B for {MONTHS[selectedMonth-1]} {selectedYear} already exists. Cannot generate again.
-                                </div>
-                            )}
-
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                                <button onClick={() => setShowGenerateModal(false)} style={{ padding: '8px 20px', border: '1px solid #ccc', background: 'white', cursor: 'pointer' }}>Cancel</button>
-                                <button
-                                    onClick={handleGenerateGSTR2B}
-                                    disabled={generating || snapshots.some(s => s.snapshot_month === selectedMonth && s.snapshot_year === selectedYear)}
-                                    style={{ padding: '8px 20px', background: '#1a73e8', color: 'white', border: 'none', cursor: 'pointer', opacity: generating ? 0.7 : 1 }}
-                                >
-                                    {generating ? 'Generating...' : 'Confirm & Generate'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Main Content */}
-            <div style={{ maxWidth: '1100px', margin: '0 auto', paddingTop: '20px', paddingBottom: '50px' }}>
-
-                {/* Header */}
-                <div style={{ background: '#00bcd4', color: 'white', padding: '8px 15px', fontSize: '16px', fontWeight: 'bold' }}>
-                    GSTR-2B — AUTO-DRAFTED ITC STATEMENT
-                </div>
-
-                {/* Profile */}
-                <div style={{ background: '#f9f9f9', border: '1px solid #ddd', padding: '15px', marginBottom: '15px', display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: '10px', fontSize: '13px' }}>
-                    <div><strong>GSTIN:</strong> {profile.gstin || profile.legalName || '...'}</div>
-                    <div><strong>Financial Year:</strong> {fy}</div>
-                    <div><strong>Legal Name:</strong> {profile.legalName || '...'}</div>
-                    <div><strong>Return Period:</strong> {monthParam}</div>
-                    <div><strong>Generation Date:</strong> {activeSnapshot ? new Date(activeSnapshot.generated_at).toLocaleDateString('en-GB') : todayDate}</div>
-                    <div><strong>Snapshot Status:</strong>
-                        {activeSnapshot
-                            ? <span style={{ color: '#2e7d32', fontWeight: 'bold' }}> LOCKED ({MONTHS[activeSnapshot.snapshot_month - 1]} {activeSnapshot.snapshot_year})</span>
-                            : <span style={{ color: '#e65100', fontWeight: 'bold' }}> LIVE (from GSTR-2A)</span>
-                        }
-                    </div>
-                </div>
-
-                {/* Snapshots List */}
-                {snapshots.length > 0 && (
-                    <div style={{ background: 'white', border: '1px solid #ddd', marginBottom: '15px' }}>
-                        <div style={{ background: '#e8f5e9', borderBottom: '1px solid #ddd', padding: '8px 15px', fontSize: '13px', fontWeight: 'bold', color: '#2e7d32' }}>
-                            Generated GSTR-2B Snapshots
-                        </div>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+        return (
+            <tr>
+                <td colSpan="7" style={{ padding: '0', border: '1px solid #ddd' }}>
+                    <div style={{ padding: '15px', background: '#f5f5f5' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', background: 'white', border: '1px solid #ccc' }}>
                             <thead>
-                                <tr style={{ background: '#f5f5f5' }}>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Month</th>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Year</th>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Generated On</th>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>Total ITC Available (₹)</th>
-                                    <th style={{ border: '1px solid #ddd', padding: '8px' }}>Status</th>
+                                <tr style={{ background: '#eaeaea' }}>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'left' }}>Supplier GSTIN</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'left' }}>Supplier Name</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'left' }}>Invoice No.</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'left' }}>Date</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>Taxable Value</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>IGST</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>CGST</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>SGST</th>
+                                    <th style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>Cess</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {snapshots.map((s, i) => (
-                                    <tr key={i} style={{ background: activeSnapshot?.id === s.id ? '#e3f2fd' : 'white' }}>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{MONTHS[s.snapshot_month - 1]}</td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{s.snapshot_year}</td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{new Date(s.generated_at).toLocaleString('en-IN')}</td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right', fontWeight: 'bold', color: '#1565c0' }}>
-                                            ₹{fmt(s.total_itc_available)}
-                                        </td>
-                                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                                            <span style={{ background: '#e8f5e9', color: '#2e7d32', padding: '2px 8px', fontSize: '11px', border: '1px solid #c8e6c9' }}>{s.status}</span>
-                                        </td>
-                                    </tr>
-                                ))}
+                                {records.map((r, i) => {
+                                    // Aggregate item totals for this record if available
+                                    let items = r.items || r.itemDetails || r.taxItems || r.tax_items || [];
+                                    let taxable = 0, igst = 0, cgst = 0, sgst = 0, cess = 0;
+                                    if(items.length > 0) {
+                                        items.forEach(item => {
+                                            taxable += parseFloat(item.taxableValue || item.taxable_value || 0);
+                                            igst += parseFloat(item.integratedTax || item.igst || 0);
+                                            cgst += parseFloat(item.centralTax || item.cgst || 0);
+                                            sgst += parseFloat(item.stateTax || item.sgst || 0);
+                                            cess += parseFloat(item.cess || 0);
+                                        });
+                                    } else {
+                                        taxable = parseFloat(r.taxableValue || r.taxable_value || r.totalInvoiceValue || 0);
+                                        igst = parseFloat(r.igst || r.integratedTax || 0);
+                                        cgst = parseFloat(r.cgst || r.centralTax || 0);
+                                        sgst = parseFloat(r.sgst || r.stateTax || 0);
+                                        cess = parseFloat(r.cess || 0);
+                                    }
+
+                                    return (
+                                        <tr key={i}>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px' }}>{r.supplier_gstin || r.receiver_gstin || 'N/A'}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px' }}>{r.supplier_name || r.receiver_name || 'N/A'}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px', color: '#1a73e8' }}>{r.invoiceNumber || r.invoice_number || r.noteNumber || r.note_number}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px' }}>{r.invoiceDate || r.invoice_date || r.noteDate || r.note_date}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>{fmt(taxable)}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>{fmt(igst)}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>{fmt(cgst)}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>{fmt(sgst)}</td>
+                                            <td style={{ border: '1px solid #ccc', padding: '6px', textAlign: 'right' }}>{fmt(cess)}</td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
-                )}
+                </td>
+            </tr>
+        );
+    };
 
-                {/* Main Card */}
-                <div style={{ background: 'white', border: '1px solid #ddd', padding: '20px' }}>
-
-                    {/* Top Tabs + Generate Button */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #ddd', marginBottom: '20px', alignItems: 'flex-end' }}>
-                        <div style={{ display: 'flex' }}>
-                            {['SUMMARY', 'ALL TABLES'].map(tab => (
-                                <button key={tab} onClick={() => setActiveMainTab(tab)}
-                                    style={{ padding: '10px 20px', cursor: 'pointer', fontSize: '14px', border: 'none', background: 'none',
-                                        color: activeMainTab === tab ? '#333' : '#007bff',
-                                        borderBottom: activeMainTab === tab ? '3px solid #007bff' : 'none',
-                                        fontWeight: activeMainTab === tab ? 'bold' : 'normal' }}>
-                                    {tab}
-                                </button>
-                            ))}
+    const SummaryRow = ({ id, sno, title, tableRef, sumData, rawData }) => {
+        const isExpanded = expandedRows[id];
+        return (
+            <>
+                <tr style={{ background: 'white' }}>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{sno}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => toggleRow(id)}>
+                            <span style={{ 
+                                display: 'inline-block', width: '20px', height: '20px', 
+                                background: '#f5f5f5', border: '1px solid #ccc', borderRadius: '50%',
+                                textAlign: 'center', lineHeight: '18px', marginRight: '10px',
+                                color: '#1a73e8', fontWeight: 'bold' 
+                            }}>
+                                {isExpanded ? '−' : '+'}
+                            </span>
+                            <span style={{ color: '#1a73e8', textDecoration: 'none' }}>{title}</span>
                         </div>
-                        <button onClick={() => setShowGenerateModal(true)}
-                            style={{ marginBottom: '5px', background: '#2e7d32', color: 'white', border: 'none', padding: '8px 18px', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            Generate GSTR-2B
-                        </button>
+                    </td>
+                    {tableRef && <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{tableRef}</td>}
+                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{fmt(sumData?.igst)}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{fmt(sumData?.cgst)}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{fmt(sumData?.sgst)}</td>
+                    <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'right' }}>{fmt(sumData?.cess)}</td>
+                </tr>
+                {isExpanded && <InvoiceDetailTable records={rawData} />}
+            </>
+        );
+    };
+
+    if (loading) return <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'Arial' }}>Loading GSTR-2B Data...</div>;
+
+    const todayDate = new Date().toLocaleDateString('en-GB');
+
+    return (
+        <div style={{ backgroundColor: '#f5f7fa', minHeight: '100vh', fontFamily: 'Arial, sans-serif' }}>
+            <Toaster position="top-right" />
+            <div style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '20px', paddingBottom: '50px' }}>
+                
+                {/* GST Portal Style Header Section */}
+                <div style={{ background: '#fcfcfc', border: '1px solid #ddd', borderBottom: 'none' }}>
+                    <div style={{ background: '#00bcd4', color: 'white', padding: '10px 20px', fontSize: '16px', fontWeight: 'bold' }}>
+                        GSTR-2B — AUTO-DRAFTED ITC STATEMENT
                     </div>
-
-                    {!activeSnapshot && (
-                        <div style={{ background: '#fff3e0', border: '1px solid #ffb74d', padding: '10px', fontSize: '13px', marginBottom: '15px' }}>
-                            <strong>Showing Live GSTR-2A Data.</strong> No GSTR-2B snapshot has been generated yet. Click <em>"Generate GSTR-2B"</em> to create a locked monthly statement.
+                    <div style={{ padding: '15px 20px', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <div>
+                            <div style={{ marginBottom: '8px' }}><strong>GSTIN</strong></div>
+                            <div style={{ color: '#333' }}>{profile.gstin || profile.legalName || '...'}</div>
+                            <div style={{ marginTop: '15px', marginBottom: '8px' }}><strong>Financial Year</strong></div>
+                            <div style={{ color: '#333' }}>{fy}</div>
                         </div>
-                    )}
+                        <div>
+                            <div style={{ marginBottom: '8px' }}><strong>Legal Name</strong></div>
+                            <div style={{ color: '#333' }}>{profile.legalName || '...'}</div>
+                            <div style={{ marginTop: '15px', marginBottom: '8px' }}><strong>Return Period</strong></div>
+                            <div style={{ color: '#333' }}>{monthParam}</div>
+                        </div>
+                        <div>
+                            <div style={{ marginBottom: '8px' }}><strong>Trade Name</strong></div>
+                            <div style={{ color: '#333' }}>{profile.tradeName || profile.legalName || '...'}</div>
+                            <div style={{ marginTop: '15px', marginBottom: '8px' }}><strong>Generation Date</strong></div>
+                            <div style={{ color: '#333' }}>{todayDate}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ background: 'white', border: '1px solid #ddd', padding: '20px' }}>
+                    {/* Main Navigation Tabs */}
+                    <div style={{ display: 'flex', borderBottom: '1px solid #ddd', marginBottom: '20px' }}>
+                        {['SUMMARY', 'ALL TABLES'].map(tab => (
+                            <button key={tab} onClick={() => setActiveMainTab(tab)}
+                                style={{ padding: '10px 25px', cursor: 'pointer', fontSize: '14px', border: 'none', background: 'none',
+                                    color: activeMainTab === tab ? '#1a73e8' : '#555',
+                                    borderBottom: activeMainTab === tab ? '3px solid #1a73e8' : 'none',
+                                    fontWeight: activeMainTab === tab ? 'bold' : 'normal' }}>
+                                {tab}
+                            </button>
+                        ))}
+                    </div>
 
                     {activeMainTab === 'SUMMARY' && (
                         <>
-                            {/* ITC Available Sub-tabs */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                                <div style={{ display: 'flex' }}>
-                                    {[
-                                        { key: 'itc_available', label: 'ITC available', activeColor: '#20b2aa' },
-                                        { key: 'itc_not_available', label: 'ITC Not Available', activeColor: '#d9534f' },
-                                        { key: 'itc_reversal', label: 'ITC Reversal', activeColor: '#d9534f' },
-                                        { key: 'itc_rejected', label: 'ITC Rejected', activeColor: '#d9534f' },
-                                    ].map(({ key, label, activeColor }) => (
-                                        <button key={key} onClick={() => setActiveSubTab(key)}
-                                            style={{ padding: '8px 15px', cursor: 'pointer', fontSize: '13px',
-                                                border: '1px solid #007bff', borderRight: 'none', background: activeSubTab === key ? activeColor : 'white',
-                                                color: activeSubTab === key ? 'white' : '#007bff' }}>
-                                            {label}
-                                        </button>
-                                    ))}
-                                    <button style={{ padding: '8px 15px', fontSize: '13px', border: '1px solid #007bff', background: 'white', color: '#007bff' }}>ITC Rejected</button>
-                                </div>
-                                <button style={{ background: '#337ab7', color: 'white', border: 'none', padding: '4px 10px', fontSize: '11px', cursor: 'pointer', height: '30px', alignSelf: 'center' }}>HELP</button>
+                            {/* ITC Sub Tabs */}
+                            <div style={{ display: 'flex', marginBottom: '20px', gap: '5px' }}>
+                                {[
+                                    { key: 'itc_available', label: 'ITC Available' },
+                                    { key: 'itc_not_available', label: 'ITC Not Available' },
+                                    { key: 'itc_reversal', label: 'ITC Reversal' },
+                                    { key: 'itc_rejected', label: 'ITC Rejected' }
+                                ].map(({ key, label }) => (
+                                    <button key={key} onClick={() => setActiveSubTab(key)}
+                                        style={{ 
+                                            padding: '10px 20px', cursor: 'pointer', fontSize: '13px', 
+                                            border: '1px solid #1a73e8', borderRadius: '4px',
+                                            background: activeSubTab === key ? '#d9534f' : 'white',
+                                            color: activeSubTab === key ? 'white' : '#1a73e8',
+                                            fontWeight: 'bold', transition: 'all 0.2s'
+                                        }}>
+                                        {label}
+                                    </button>
+                                ))}
                             </div>
 
                             {activeSubTab === 'itc_available' && (
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #ddd' }}>
                                     <thead>
                                         <tr>
-                                            {['S.NO.','Heading  ' + `[Expand All]`,'GSTR-3B table','Integrated Tax (₹)','Central Tax (₹)','State/UT Tax (₹)','Cess (₹)'].map((h, i) => (
-                                                <th key={i} onClick={i === 1 ? expandAll : undefined}
-                                                    style={{ border: '1px solid #ddd', padding: '8px', textAlign: i > 2 ? 'right' : 'center', background: '#e6f2eb', color: '#2e7d32', cursor: i===1 ? 'pointer' : 'default', fontSize: '12px' }}>
+                                            {['S.No.', 'Heading', 'GSTR-3B Table', 'Integrated Tax', 'Central Tax', 'State/UT Tax', 'Cess'].map((h, i) => (
+                                                <th key={i} style={{ border: '1px solid #ddd', padding: '10px', textAlign: i > 2 ? 'right' : 'center', background: '#fce4e4', color: '#333', fontSize: '12px', fontWeight: 'bold' }}>
                                                     {h}
                                                 </th>
                                             ))}
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>Part A</td><td colSpan="6" style={{ border: '1px solid #ddd', padding: '8px' }}>ITC Available - Credit may be claimed in relevant headings in GSTR-3B</td></tr>
-
-                                        {/* Section I */}
-                                        <tr style={{ fontWeight: '500' }}>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>I</td>
-                                            <td style={{ border: '1px solid #ddd', padding: '8px', cursor: 'pointer' }} onClick={() => toggleRow('a1')}>
-                                                All other ITC - Supplies from registered persons
+                                        <tr>
+                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>Part A</td>
+                                            <td colSpan="6" style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>
+                                                ITC Available - Credit may be claimed in relevant headings in GSTR-3B
                                             </td>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>4(A)(5)</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partAI.igst)}</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partAI.cgst)}</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partAI.sgst)}</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partAI.cess)}</td>
                                         </tr>
-                                        {expandedRows['a1'] && <>
-                                            <ChildRow title="B2B - Invoices - IMS" sumData={displaySums.b2bRegular} />
-                                            <ChildRow title="B2B - Invoices (Amendment) - IMS" sumData={displaySums.amended} />
-                                            <ChildRow title="ECO - Documents - IMS" sumData={emptySum} />
-                                        </>}
-
-                                        {/* Section II */}
-                                        <tr style={{ fontWeight: '500' }}>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>II</td>
-                                            <td style={{ border: '1px solid #ddd', padding: '8px', cursor: 'pointer' }} onClick={() => toggleRow('a2')}>
-                                                Inward Supplies from ISD
+                                        <SummaryRow id="av_a1" sno="I" title="All other ITC - Supplies from registered persons" tableRef="4(A)(5)" sumData={boxes.registered} rawData={rawRecords.registered} />
+                                        <SummaryRow id="av_a2" sno="II" title="Inward Supplies from ISD" tableRef="4(A)(4)" sumData={boxes.isd} rawData={rawRecords.isd} />
+                                        <SummaryRow id="av_a3" sno="III" title="Inward Supplies liable for Reverse Charge" tableRef="3.1(d) / 4(A)(3)" sumData={boxes.revCharge} rawData={rawRecords.revCharge} />
+                                        <SummaryRow id="av_a4" sno="IV" title="Import of Goods" tableRef="4(A)(1)" sumData={boxes.importGoods} rawData={rawRecords.importGoods} />
+                                        <SummaryRow id="av_a5" sno="V" title="Import of Goods from SEZ" tableRef="4(A)(1)" sumData={boxes.sez} rawData={rawRecords.sez} />
+                                        
+                                        <tr>
+                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>Part B</td>
+                                            <td colSpan="6" style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>
+                                                ITC Available - Credit notes should be net off against relevant ITC available headings in GSTR-3B
                                             </td>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>4(A)(4)</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
                                         </tr>
-                                        {expandedRows['a2'] && <><ChildRow title="ISD - Invoices" sumData={emptySum} /><ChildRow title="ISD - Invoices (Amendment)" sumData={emptySum} /></>}
-
-                                        {/* Section III */}
-                                        <tr style={{ fontWeight: '500' }}>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>III</td>
-                                            <td style={{ border: '1px solid #ddd', padding: '8px', cursor: 'pointer' }} onClick={() => toggleRow('a3')}>
-                                                Inward Supplies liable for reverse charge
-                                            </td>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>3.1(d)<br/>4(A)(3)</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                        </tr>
-
-                                        {/* Section IV */}
-                                        <tr style={{ fontWeight: '500' }}>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>IV</td>
-                                            <td style={{ border: '1px solid #ddd', padding: '8px' }}>Import of Goods</td>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>4(A)(1)</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>0.00</td>
-                                        </tr>
-
-                                        <tr><td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>Part B</td><td colSpan="6" style={{ border: '1px solid #ddd', padding: '8px' }}>ITC Available - Credit notes should be net off against relevant ITC available headings in GSTR-3B</td></tr>
-
-                                        {/* Part B I */}
-                                        <tr style={{ fontWeight: '500' }}>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>I</td>
-                                            <td style={{ border: '1px solid #ddd', padding: '8px', cursor: 'pointer' }} onClick={() => toggleRow('b1')}>
-                                                Others
-                                            </td>
-                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px' }}>4(A)</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partBI.igst)}</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partBI.cgst)}</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partBI.sgst)}</td>
-                                            <td style={{ textAlign: 'right', border: '1px solid #ddd', padding: '8px' }}>{fmt(partBI.cess)}</td>
-                                        </tr>
-                                        {expandedRows['b1'] && <>
-                                            <ChildRow title="B2B - Credit notes - IMS" sumData={displaySums.cdnrNotes} />
-                                            <ChildRow title="ISD - Credit notes" sumData={emptySum} />
-                                        </>}
+                                        <SummaryRow id="av_b1" sno="I" title="Others" tableRef="4(A)" sumData={boxes.cdnr} rawData={rawRecords.cdnr} />
                                     </tbody>
                                 </table>
                             )}
 
-                            {(activeSubTab === 'itc_not_available' || activeSubTab === 'itc_reversal' || activeSubTab === 'itc_rejected') && (
-                                <div style={{ background: '#f9f9f9', border: '1px solid #ddd', padding: '20px', textAlign: 'center', color: '#777', fontSize: '13px' }}>
-                                    No {activeSubTab.replace(/_/g, ' ').toUpperCase()} records found.
-                                </div>
+                            {activeSubTab === 'itc_not_available' && (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #ddd' }}>
+                                    <thead>
+                                        <tr>
+                                            {['S.No.', 'Heading', 'GSTR-3B Table', 'Integrated Tax', 'Central Tax', 'State/UT Tax', 'Cess'].map((h, i) => (
+                                                <th key={i} style={{ border: '1px solid #ddd', padding: '10px', textAlign: i > 2 ? 'right' : 'center', background: '#fce4e4', color: '#333', fontSize: '12px', fontWeight: 'bold' }}>
+                                                    {h}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>Part A</td>
+                                            <td colSpan="6" style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>
+                                                ITC Not Available
+                                            </td>
+                                        </tr>
+                                        <SummaryRow id="na_a1" sno="I" title="All other ITC - Supplies from registered persons" tableRef="-" sumData={emptySum} rawData={[]} />
+                                        <SummaryRow id="na_a2" sno="II" title="Inward Supplies from ISD" tableRef="-" sumData={emptySum} rawData={[]} />
+                                        <SummaryRow id="na_a3" sno="III" title="Inward Supplies liable for reverse charge" tableRef="-" sumData={emptySum} rawData={[]} />
+                                        
+                                        <tr>
+                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>Part B</td>
+                                            <td colSpan="6" style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>
+                                                ITC Not Available (Credit Notes)
+                                            </td>
+                                        </tr>
+                                        <SummaryRow id="na_b1" sno="I" title="Others" tableRef="-" sumData={emptySum} rawData={[]} />
+                                    </tbody>
+                                </table>
+                            )}
+
+                            {activeSubTab === 'itc_reversal' && (
+                                <>
+                                    <div style={{ background: '#e3f2fd', border: '1px solid #90caf9', color: '#1565c0', padding: '10px', fontSize: '13px', marginBottom: '15px' }}>
+                                        Data will be available in GSTR-2B of September month.
+                                    </div>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #ddd' }}>
+                                        <thead>
+                                            <tr>
+                                                {['S.No.', 'Heading', 'Integrated Tax', 'Central Tax', 'State/UT Tax', 'Cess'].map((h, i) => (
+                                                    <th key={i} style={{ border: '1px solid #ddd', padding: '10px', textAlign: i > 1 ? 'right' : 'center', background: '#fce4e4', color: '#333', fontSize: '12px', fontWeight: 'bold' }}>
+                                                        {h}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <SummaryRow id="rev_1" sno="1" title="ITC Reversed - Others" tableRef={null} sumData={emptySum} rawData={[]} />
+                                            <SummaryRow id="rev_2" sno="2" title="ITC Reversal on account of Rule 37A" tableRef={null} sumData={emptySum} rawData={[]} />
+                                        </tbody>
+                                    </table>
+                                </>
+                            )}
+
+                            {activeSubTab === 'itc_rejected' && (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #ddd' }}>
+                                    <thead>
+                                        <tr>
+                                            {['S.No.', 'Heading', 'Integrated Tax', 'Central Tax', 'State/UT Tax', 'Cess'].map((h, i) => (
+                                                <th key={i} style={{ border: '1px solid #ddd', padding: '10px', textAlign: i > 1 ? 'right' : 'center', background: '#fce4e4', color: '#333', fontSize: '12px', fontWeight: 'bold' }}>
+                                                    {h}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>Part A</td>
+                                            <td colSpan="5" style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>
+                                                Rejected Records - Invoices rejected on IMS Dashboard
+                                            </td>
+                                        </tr>
+                                        <SummaryRow id="rej_a1" sno="I" title="All other ITC - Supplies from registered persons" tableRef={null} sumData={emptySum} rawData={[]} />
+                                        <SummaryRow id="rej_a2" sno="II" title="Inward Supplies from ISD" tableRef={null} sumData={emptySum} rawData={[]} />
+                                        
+                                        <tr>
+                                            <td style={{ textAlign: 'center', border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>Part B</td>
+                                            <td colSpan="5" style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', background: '#f5f5f5' }}>
+                                                Rejected Records - Credit Notes rejected on IMS Dashboard
+                                            </td>
+                                        </tr>
+                                        <SummaryRow id="rej_b1" sno="I" title="Others" tableRef={null} sumData={emptySum} rawData={[]} />
+                                    </tbody>
+                                </table>
                             )}
                         </>
                     )}
 
                     {activeMainTab === 'ALL TABLES' && (
-                        <div>
-                            {gstr2bRecords.b2b.length === 0 && gstr2bRecords.cdnr.length === 0 ? (
-                                <div style={{ background: '#f9f9f9', border: '1px solid #ddd', padding: '20px', textAlign: 'center', color: '#777', fontSize: '13px' }}>
-                                    No GSTR-2B snapshot records found. Generate a GSTR-2B snapshot to view locked records here.
-                                </div>
-                            ) : (
-                                <>
-                                    <h4 style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '8px', color: '#333' }}>B2B Invoices ({gstr2bRecords.b2b.length})</h4>
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', marginBottom: '20px' }}>
-                                        <thead>
-                                            <tr style={{ background: '#d9edf7' }}>
-                                                {['Supplier GSTIN','Supplier Name','Invoice No','Invoice Date','Taxable Value','IGST','CGST','SGST','ITC Status'].map(h => (
-                                                    <th key={h} style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>{h}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {gstr2bRecords.b2b.map((r, i) => (
-                                                <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#f9f9f9' }}>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px' }}>{r.supplier_gstin}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px' }}>{r.supplier_name}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px', color: '#1a73e8' }}>{r.invoice_number}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px' }}>{r.invoice_date}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'right' }}>{fmt(r.taxable_value)}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'right' }}>{fmt(r.igst)}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'right' }}>{fmt(r.cgst)}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'right' }}>{fmt(r.sgst)}</td>
-                                                    <td style={{ border: '1px solid #ddd', padding: '7px', textAlign: 'center' }}>
-                                                        <span style={{ background: '#e8f5e9', color: '#2e7d32', padding: '2px 6px', fontSize: '10px', border: '1px solid #c8e6c9' }}>{r.itc_status}</span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </>
-                            )}
+                        <div style={{ padding: '30px', textAlign: 'center', color: '#777', border: '1px solid #ddd' }}>
+                            All Tables view is under construction. Please use the SUMMARY tab to view invoice-wise details.
                         </div>
                     )}
                 </div>
 
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '15px' }}>
-                    <button onClick={() => navigate('/returns/gstr2a')} style={{ background: 'white', color: '#333', border: '1px solid #ccc', padding: '8px 15px', fontSize: '13px', cursor: 'pointer' }}>Back to GSTR-2A</button>
-                    <button onClick={() => navigate('/returns-dashboard')} style={{ background: '#284b7a', color: 'white', border: 'none', padding: '8px 20px', fontSize: '13px', cursor: 'pointer' }}>BACK TO DASHBOARD</button>
+                {/* Button Section (Exact GST Portal Styling) */}
+                <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    {/* First Row Buttons */}
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <button onClick={() => navigate('/returns-dashboard')} style={{ background: 'white', color: '#1a73e8', border: '1px solid #1a73e8', padding: '8px 20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px' }}>BACK TO DASHBOARD</button>
+                        <button style={{ background: '#1a73e8', color: 'white', border: '1px solid #1a73e8', padding: '8px 20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px' }}>DOWNLOAD GSTR-2B SUMMARY (PDF)</button>
+                        <button style={{ background: '#1a73e8', color: 'white', border: '1px solid #1a73e8', padding: '8px 20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px' }}>DOWNLOAD GSTR-2B DETAILS (EXCEL)</button>
+                    </div>
+                    {/* Second Row Buttons */}
+                    <div style={{ display: 'flex', gap: '15px' }}>
+                        <button style={{ background: 'white', color: '#1a73e8', border: '1px solid #1a73e8', padding: '8px 20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px' }}>OPEN GSTR-3B</button>
+                        <button style={{ background: 'white', color: '#1a73e8', border: '1px solid #1a73e8', padding: '8px 20px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', borderRadius: '4px' }}>OPEN IMS DASHBOARD</button>
+                    </div>
                 </div>
+
             </div>
 
             {/* Footer */}
-            <div style={{ background: '#123456', color: 'white', padding: '20px 10%', display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '20px' }}>
+            <div style={{ background: '#123456', color: 'white', padding: '20px 10%', display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '40px' }}>
                 <span>© 2025-26 Goods and Services Tax Network</span>
-                <span>Designed &amp; Developed by GSTN</span>
+                <span>Designed & Developed by GSTN</span>
             </div>
         </div>
     );

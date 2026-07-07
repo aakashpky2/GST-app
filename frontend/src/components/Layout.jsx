@@ -21,19 +21,17 @@ const Layout = ({ children }) => {
     };
 
     // All paths that use the GST portal's own nav (bd-navbar) instead of the Layout navbar
+    const isRegistrationPath = [
+        '/business-details', '/promoter-partners', '/authorized-signatory',
+        '/authorized-representative', '/principal-place-of-business',
+        '/additional-places-of-business', '/goods-and-services',
+        '/state-specific-information', '/aadhaar-authentication', '/verification'
+    ].some(path => location.pathname.startsWith(path));
+
     const isDashboard = location.pathname.startsWith('/dashboard') ||
         location.pathname.startsWith('/returns') ||
         location.pathname.startsWith('/payment') ||
-        location.pathname.startsWith('/business-details') ||
-        location.pathname.startsWith('/promoter-partners') ||
-        location.pathname.startsWith('/authorized-signatory') ||
-        location.pathname.startsWith('/authorized-representative') ||
-        location.pathname.startsWith('/principal-place-of-business') ||
-        location.pathname.startsWith('/additional-places-of-business') ||
-        location.pathname.startsWith('/goods-and-services') ||
-        location.pathname.startsWith('/state-specific-information') ||
-        location.pathname.startsWith('/aadhaar-authentication') ||
-        location.pathname.startsWith('/verification');
+        isRegistrationPath;
 
     useEffect(() => {
         if (isDashboard) {
@@ -49,13 +47,15 @@ const Layout = ({ children }) => {
                 } catch (err) {
                     console.warn('Failed to fetch user data for layout', err);
                     if (err.response && err.response.status === 401) {
-                        handleLogout();
+                        if (!isRegistrationPath) {
+                            handleLogout();
+                        }
                     }
                 }
             };
             fetchUserData();
         }
-    }, [location.pathname, isDashboard]);
+    }, [location.pathname, isDashboard, isRegistrationPath]);
 
     const toggleMenu = (menu) => {
         if (activeMenu === menu) {

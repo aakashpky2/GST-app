@@ -10,6 +10,14 @@ const GSTR1AdvTaxDashboard = () => {
     const [records, setRecords] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const handleRefresh = () => {
+        setIsLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
+
     useEffect(() => {
         const fetchRecords = async () => {
             try {
@@ -29,6 +37,29 @@ const GSTR1AdvTaxDashboard = () => {
         };
         fetchRecords();
     }, []);
+
+    const groupedRecords = Object.values(records.reduce((acc, rec) => {
+        const pos = rec.pos || 'Unknown';
+        if (!acc[pos]) {
+            acc[pos] = {
+                pos: pos,
+                supplyType: rec.supply_type || rec.supplyType,
+                grossAdvance: 0,
+                integratedTax: 0,
+                centralTax: 0,
+                stateTax: 0,
+                cess: 0
+            };
+        }
+        
+        acc[pos].grossAdvance += parseFloat(rec.gross_advance_received || 0);
+        acc[pos].integratedTax += parseFloat(rec.integrated_tax || 0);
+        acc[pos].centralTax += parseFloat(rec.central_tax || 0);
+        acc[pos].stateTax += parseFloat(rec.state_ut_tax || 0);
+        acc[pos].cess += parseFloat(rec.cess || 0);
+        
+        return acc;
+    }, {}));
 
     return (
         <div className="dashboard-container" style={{ backgroundColor: '#f1f3f6' }}>
@@ -55,7 +86,7 @@ const GSTR1AdvTaxDashboard = () => {
                     <div className="cdnr-header-flex">
                         <h2 className="cdnr-title">11A(1), 11A(2) - Tax Liability (Advances Received)</h2>
                         <div className="cdnr-header-actions">
-                            <button className="cdnr-refresh-icon">
+                            <button className="cdnr-refresh-icon" onClick={handleRefresh}>
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
                                     <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
                                 </svg>
@@ -68,12 +99,20 @@ const GSTR1AdvTaxDashboard = () => {
                 <div className="cdnr-dashboard-body">
                     {isLoading ? (
                         <div className="cdnr-loading">Loading...</div>
-                    ) : records.length === 0 ? (
+                    ) : groupedRecords.length === 0 ? (
                         <div className="cdnr-empty-alert">
-                            <span><span style={{ marginRight: '8px', fontWeight: 'bold' }}></span>There are no records to be displayed.</span>
+                            <span>No Tax Liability (Advances Received) records found for the selected return period.</span>
                         </div>
                     ) : (
                         <div className="cdnr-table-container">
+                            <div style={{ padding: '10px 15px', backgroundColor: '#e0f2fe', borderBottom: '1px solid #bae6fd', fontSize: '14px', fontWeight: '500', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                <span>Total Records: {groupedRecords.length}</span>
+                                <span>Total Gross Advance Received: ₹{groupedRecords.reduce((sum, r) => sum + r.grossAdvance, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total IGST: ₹{groupedRecords.reduce((sum, r) => sum + r.integratedTax, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total CGST: ₹{groupedRecords.reduce((sum, r) => sum + r.centralTax, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total SGST: ₹{groupedRecords.reduce((sum, r) => sum + r.stateTax, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total CESS: ₹{groupedRecords.reduce((sum, r) => sum + r.cess, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
                             <table className="cdnr-records-table">
                                 <thead>
                                     <tr>
@@ -87,26 +126,17 @@ const GSTR1AdvTaxDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {records.map((rec, idx) => {
-                                        const items = rec.itemDetails || [];
-                                        const totalGross = items.reduce((sum, item) => sum + (parseFloat(item.grossAdvance) || 0), 0).toFixed(2);
-                                        const totalIntegrated = items.reduce((sum, item) => sum + (parseFloat(item.integratedTax) || 0), 0).toFixed(2);
-                                        const totalCentral = items.reduce((sum, item) => sum + (parseFloat(item.centralTax) || 0), 0).toFixed(2);
-                                        const totalState = items.reduce((sum, item) => sum + (parseFloat(item.stateTax) || 0), 0).toFixed(2);
-                                        const totalCess = items.reduce((sum, item) => sum + (parseFloat(item.cess) || 0), 0).toFixed(2);
-
-                                        return (
-                                            <tr key={idx}>
-                                                <td>{rec.pos}</td>
-                                                <td>{rec.supplyType}</td>
-                                                <td>{totalGross}</td>
-                                                <td>{totalIntegrated}</td>
-                                                <td>{totalCentral}</td>
-                                                <td>{totalState}</td>
-                                                <td>{totalCess}</td>
-                                            </tr>
-                                        );
-                                    })}
+                                    {groupedRecords.map((rec, idx) => (
+                                        <tr key={idx}>
+                                            <td>{rec.pos}</td>
+                                            <td>{rec.supplyType}</td>
+                                            <td>₹{rec.grossAdvance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td>₹{rec.integratedTax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td>₹{rec.centralTax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td>₹{rec.stateTax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td>₹{rec.cess.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        </tr>
+                                    ))}
                                 </tbody>
                             </table>
                         </div>

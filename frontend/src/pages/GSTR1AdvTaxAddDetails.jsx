@@ -128,9 +128,13 @@ const GSTR1AdvTaxAddDetails = () => {
                             trn,
                             pos: formData.pos,
                             supply_type: formData.supplyType,
-                            gross_advance_received: item.grossAdvance,
+                            is_differential_rate: formData.differentialRate,
+                            gross_advance_received: parseFloat(item.grossAdvance) || 0,
                             rate: item.rate,
-                            item_details: [item]
+                            integrated_tax: parseFloat(item.integratedTax) || 0,
+                            central_tax: parseFloat(item.centralTax) || 0,
+                            state_ut_tax: parseFloat(item.stateTax) || 0,
+                            cess: parseFloat(item.cess) || 0
                         };
                         return gstr1Service.saveGstr1Record('gstr1_adv_tax', payload);
                     })

@@ -124,14 +124,18 @@ const GSTR1AdjAdvancesAddDetails = () => {
                 formData.itemDetails
                     .filter(item => parseFloat(item.grossAdjustment) > 0)
                     .map(async (item) => {
-                        const payload = {
-                            trn,
-                            pos: formData.pos,
-                            supply_type: formData.supplyType,
-                            gross_advance_adjusted: item.grossAdjustment,
-                            rate: item.rate,
-                            item_details: [item]
-                        };
+                         const payload = {
+                             trn,
+                             pos: formData.pos,
+                             supply_type: formData.supplyType,
+                             is_differential_rate: formData.differentialRate,
+                             gross_advance_adjusted: item.grossAdjustment,
+                             rate: item.rate,
+                             integrated_tax: parseFloat(item.integratedTax) || 0,
+                             central_tax: parseFloat(item.centralTax) || 0,
+                             state_ut_tax: parseFloat(item.stateTax) || 0,
+                             cess: parseFloat(item.cess) || 0
+                         };
                         return gstr1Service.saveGstr1Record('gstr1_adj_advances', payload);
                     })
             );

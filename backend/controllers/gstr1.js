@@ -53,30 +53,9 @@ exports.saveRecord = async (req, res) => {
             return res.status(400).json({ success: false, message: 'TableName and Payload with TRN required' });
         }
 
-        const uniqueKeys = getUniqueKeys(tableName);
-        
-        // Build match object for checking existence
-        let matchObj = {};
-        let hasAllKeys = true;
-        for (let key of uniqueKeys) {
-            if (payload[key] === undefined || payload[key] === null) {
-                if (['trn', 'invoice_no', 'note_number'].includes(key)) hasAllKeys = false;
-            } else {
-                matchObj[key] = payload[key];
-            }
-        }
-
         let existingRecord = null;
-        if (hasAllKeys && Object.keys(matchObj).length > 0) {
-            // Check if exists
-            let query = supabase.from(tableName).select('id');
-            for (let k in matchObj) {
-                query = query.eq(k, matchObj[k]);
-            }
-            const { data } = await query.single();
-            if (data) existingRecord = data;
-        } else if (payload.id) {
-            // Fallback check by ID if provided
+        if (payload.id) {
+            // Check by ID if provided (Editing)
             const { data } = await supabase.from(tableName).select('id').eq('id', payload.id).single();
             if (data) existingRecord = data;
         }
@@ -99,14 +78,23 @@ exports.saveRecord = async (req, res) => {
                 .from(tableName)
                 .insert([payload])
                 .select();
-            if (error) throw error;
+            if (error) {
+                const errStr = typeof error === 'string' ? error : JSON.stringify(error) + ' ' + (error.message || '') + ' ' + (error.details || '');
+                if (errStr.includes('23505') || errStr.toLowerCase().includes('duplicate key') || errStr.toLowerCase().includes('unique constraint')) {
+                    return res.status(400).json({ success: false, message: 'This Invoice Number / Document Number already exists for your TRN. Please use a unique number to add a new record.' });
+                }
+                throw error;
+            }
             result = data;
         }
 
         res.status(200).json({ success: true, data: result[0] });
     } catch (error) {
-        console.error(`Error saving record for ${req.params.tableName}:`, error.message);
-        res.status(500).json({ success: false, message: error.message });
+        // Log full error details for debugging
+        console.error(`Error saving record for ${req.params.tableName}:`, error);
+        const errorMsg = error.message || 'Unknown error';
+        const errorDetails = error.details || '';
+        res.status(500).json({ success: false, message: errorMsg, details: errorDetails });
     }
 };
 

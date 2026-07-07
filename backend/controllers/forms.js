@@ -42,53 +42,43 @@ exports.saveTab = async (req, res) => {
         localDb[trn][tabName] = data;
         writeLocalDb(localDb);
 
-        // We will store all tabs data in a single 'form_submissions' table 
-        // Or in 'business_details' under 'form_tabs_data' jsonb column.
-        // Let's use 'business_details' as this TRN row already exists.
-
-        // Setup: fetching existing data to append the new tab payload
-        const { data: existing, error: fetchErr } = await supabase
-            .from('business_details')
-            .select('form_tabs_data')
-            .eq('trn', trn)
-            .single();
-
-        let currentFormData = {};
-        if (!fetchErr && existing && existing.form_tabs_data) {
-            try {
-                // Parse existing data if it's text, otherwise use as object
-                currentFormData = typeof existing.form_tabs_data === 'string' ? JSON.parse(existing.form_tabs_data) : existing.form_tabs_data;
-            } catch (e) {
-                currentFormData = {};
-            }
+        // Determine action_key based on tabName
+        let actionKey = '';
+        switch(tabName) {
+            case 'PromoterPartners': actionKey = 'reg_promoter_partners'; break;
+            case 'AuthorizedSignatory': actionKey = 'reg_auth_signatory'; break;
+            case 'AuthorizedRepresentative': actionKey = 'reg_auth_signatory'; break; // Maps to similar cost
+            case 'PrincipalPlaceOfBusiness': actionKey = 'reg_principal_place'; break;
+            case 'AdditionalPlacesOfBusiness': actionKey = 'reg_additional_place'; break;
+            case 'GoodsAndServices': actionKey = 'reg_goods_services'; break;
+            case 'StateSpecificInformation': actionKey = 'reg_started'; break;
+            case 'Verification': actionKey = 'reg_verification'; break;
+            case 'AadhaarAuthentication': actionKey = 'reg_verification'; break;
+            default: actionKey = 'reg_started';
         }
 
-        // Update with new tab
-        currentFormData[tabName] = data;
+        // We assume req.user is set by auth middleware, if not we need it from the request body or token
+        // In the GST app, auth middleware sets req.user
+        const userId = req.user ? req.user.id : (req.body.userId || '00000000-0000-0000-0000-000000000000');
 
-        // Save back using upsert to handle cases where the row might not exist yet
-        const { error: updateErr } = await supabase
-            .from('business_details')
-            .upsert({
-                trn,
-                form_tabs_data: currentFormData,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'trn' });
+        // Save back using ATOMIC RPC to handle credit deduction and data insertion in one transaction
+        const { data: rpcData, error: updateErr } = await supabase
+            .rpc('atomic_save_tab_and_burn', {
+                p_user_id: userId,
+                p_trn: trn,
+                p_tab_name: tabName,
+                p_tab_data: data,
+                p_action_key: actionKey
+            });
 
         if (updateErr) {
-            // Fallback: If 'form_tabs_data' column does not exist, we try a separate 'form_submissions' table
-            const { error: fallbackErr } = await supabase
-                .from('form_submissions')
-                .upsert(
-                    { trn, tab_name: tabName, form_data: data, updated_at: new Date().toISOString() },
-                    { onConflict: 'trn, tab_name' }
-                );
-
-            if (fallbackErr) {
-                // Double fallback if schema isn't prepared, return success but log error
-                console.error('Supabase Error saving tab:', updateErr.message, fallbackErr.message);
-                return res.status(200).json({ success: true, message: 'Saved to mock storage temporarily', fallback: true });
+            console.error('Supabase Error saving tab:', updateErr.message);
+            if (updateErr.message && updateErr.message.includes('INSUFFICIENT_CREDITS')) {
+                return res.status(402).json({ success: false, message: 'Insufficient credits to perform this action.' });
             }
+
+            // Fallback: If RPC fails due to schema issues or project paused, use local mock
+            return res.status(200).json({ success: true, message: 'Saved to mock storage temporarily', fallback: true });
         }
 
         // Special Handling: Save to structured tables if needed

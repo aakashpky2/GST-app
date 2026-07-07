@@ -88,6 +88,26 @@ const GSTR1B2CSDashboard = () => {
                         </div>
                     ) : (
                         <div className="b2cs-records-table-container">
+                            <div style={{ padding: '10px 15px', backgroundColor: '#e0f2fe', borderBottom: '1px solid #bae6fd', fontSize: '14px', fontWeight: '500', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                                <span>Total Records: {invoices.length}</span>
+                                <span>Total Taxable Value: ₹{invoices.reduce((sum, inv) => sum + parseFloat(inv.taxable_value || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total IGST: ₹{invoices.reduce((sum, inv) => {
+                                    const tax = parseFloat(inv.taxable_value || 0);
+                                    const rate = parseFloat((inv.rate || '0%').replace('%', ''));
+                                    return sum + (inv.supply_type === 'Inter-State' ? (tax * rate) / 100 : 0);
+                                }, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total CGST: ₹{invoices.reduce((sum, inv) => {
+                                    const tax = parseFloat(inv.taxable_value || 0);
+                                    const rate = parseFloat((inv.rate || '0%').replace('%', ''));
+                                    return sum + (inv.supply_type !== 'Inter-State' ? (tax * (rate / 2)) / 100 : 0);
+                                }, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total SGST: ₹{invoices.reduce((sum, inv) => {
+                                    const tax = parseFloat(inv.taxable_value || 0);
+                                    const rate = parseFloat((inv.rate || '0%').replace('%', ''));
+                                    return sum + (inv.supply_type !== 'Inter-State' ? (tax * (rate / 2)) / 100 : 0);
+                                }, 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span>Total CESS: ₹0.00</span>
+                            </div>
                             <table className="b2cs-records-table">
                                 <thead>
                                     <tr>
@@ -101,17 +121,36 @@ const GSTR1B2CSDashboard = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {invoices.map((inv, idx) => (
-                                        <tr key={inv.id || idx}>
-                                            <td>{inv.pos}</td>
-                                            <td>{inv.supplyType || 'Intra-State'}</td>
-                                            <td>{inv.taxableValue}</td>
-                                            <td>{inv.integratedTax || '0.00'}</td>
-                                            <td>{inv.centralTax || '0.00'}</td>
-                                            <td>{inv.stateTax || '0.00'}</td>
-                                            <td>{inv.cess || '0.00'}</td>
-                                        </tr>
-                                    ))}
+                                    {invoices.map((inv, idx) => {
+                                        const taxableAmt = parseFloat(inv.taxable_value || 0);
+                                        const rateStr = inv.rate || '0%';
+                                        const rateVal = parseFloat(rateStr.replace('%', ''));
+                                        
+                                        let igst = 0, cgst = 0, sgst = 0;
+                                        const supplyType = inv.supply_type || 'Intra-State';
+                                        
+                                        if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
+                                            if (supplyType === 'Intra-State') {
+                                                const halfTax = (taxableAmt * (rateVal / 2)) / 100;
+                                                cgst = halfTax;
+                                                sgst = halfTax;
+                                            } else {
+                                                igst = (taxableAmt * rateVal) / 100;
+                                            }
+                                        }
+
+                                        return (
+                                            <tr key={inv.id || idx}>
+                                                <td>{inv.pos}</td>
+                                                <td>{supplyType}</td>
+                                                <td>₹{taxableAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td>₹{igst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td>₹{cgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td>₹{sgst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td>₹0.00</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS public.gstr1_eco_supplies (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     -- Grouped by TRN, Type, and ECO GSTIN
-    UNIQUE(trn, eco_type, eco_gstin)
+
 );
 
 -- Index for faster retrieval

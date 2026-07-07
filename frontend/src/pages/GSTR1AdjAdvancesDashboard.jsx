@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Dashboard.css';
 import './GSTR1CDNRDashboard.css'; // Reusing layout styles
-import api from '../api/axios';
 import gstr1Service from '../services/gstr1Service';
 
 const GSTR1AdjAdvancesDashboard = () => {
@@ -15,14 +14,13 @@ const GSTR1AdjAdvancesDashboard = () => {
             try {
                 const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
                 const res = await gstr1Service.getGstr1Records('gstr1_adj_advances', trn);
-
                 if (res.success && res.data) {
                     setRecords(res.data);
                 } else {
                     setRecords([]);
                 }
             } catch (error) {
-                console.error("Failed to fetch Adjustment of Advances records");
+                console.error('Failed to fetch Adjustment of Advances records');
             } finally {
                 setIsLoading(false);
             }
@@ -57,7 +55,7 @@ const GSTR1AdjAdvancesDashboard = () => {
                         <div className="cdnr-header-actions">
                             <button className="cdnr-refresh-icon">
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
-                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                                    <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.5 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
                                 </svg>
                             </button>
                         </div>
@@ -88,22 +86,31 @@ const GSTR1AdjAdvancesDashboard = () => {
                                 </thead>
                                 <tbody>
                                     {records.map((rec, idx) => {
-                                        const items = rec.itemDetails || [];
-                                        const totalGross = items.reduce((sum, item) => sum + (parseFloat(item.grossAdjustment) || 0), 0).toFixed(2);
-                                        const totalIntegrated = items.reduce((sum, item) => sum + (parseFloat(item.integratedTax) || 0), 0).toFixed(2);
-                                        const totalCentral = items.reduce((sum, item) => sum + (parseFloat(item.centralTax) || 0), 0).toFixed(2);
-                                        const totalState = items.reduce((sum, item) => sum + (parseFloat(item.stateTax) || 0), 0).toFixed(2);
-                                        const totalCess = items.reduce((sum, item) => sum + (parseFloat(item.cess) || 0), 0).toFixed(2);
-
+                                        const gross = rec.gross_advance_adjusted ? parseFloat(rec.gross_advance_adjusted).toFixed(2) : '0.00';
+                                        const cess = rec.cess ? parseFloat(rec.cess).toFixed(2) : '0.00';
+                                        const integrated = rec.integrated_tax ? parseFloat(rec.integrated_tax).toFixed(2) : '';
+                                        const central = rec.central_tax ? parseFloat(rec.central_tax).toFixed(2) : '';
+                                        const state = rec.state_ut_tax ? parseFloat(rec.state_ut_tax).toFixed(2) : '';
                                         return (
                                             <tr key={idx}>
                                                 <td>{rec.pos}</td>
-                                                <td>{rec.supplyType}</td>
-                                                <td>{totalGross}</td>
-                                                <td>{totalIntegrated}</td>
-                                                <td>{totalCentral}</td>
-                                                <td>{totalState}</td>
-                                                <td>{totalCess}</td>
+                                                <td>{rec.supply_type}</td>
+                                                <td>{gross}</td>
+                                                {rec.supply_type === 'Intra-State' ? (
+                                                    <>
+                                                        <td></td>
+                                                        <td>{central}</td>
+                                                        <td>{state}</td>
+                                                        <td>{cess}</td>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <td>{integrated}</td>
+                                                        <td></td>
+                                                        <td></td>
+                                                        <td>{cess}</td>
+                                                    </>
+                                                )}
                                             </tr>
                                         );
                                     })}
@@ -111,23 +118,20 @@ const GSTR1AdjAdvancesDashboard = () => {
                             </table>
                         </div>
                     )}
-
                     {/* Bottom Actions */}
                     <div className="cdnr-actions-row">
                         <button className="cdnr-btn-outline" onClick={() => navigate('/returns/gstr1')}>BACK</button>
                         <button className="cdnr-btn-primary" onClick={() => navigate('/returns/gstr1/adjadvances/add')}>ADD STATE WISE DETAILS</button>
                     </div>
                 </div>
+                <div style={{ flexGrow: 1 }}></div>
+                {/* Footer Bar */}
+                <footer className="dashboard-footer-bar">
+                    <div className="footer-left">© 2025-26 Goods and Services Tax Network</div>
+                    <div className="footer-center">Site Last Updated on 24-01-2026</div>
+                    <div className="footer-right">Designed &amp; Developed by GSTN</div>
+                </footer>
             </div>
-
-            <div style={{ flexGrow: 1 }}></div>
-
-            {/* Footer Bar */}
-            <footer className="dashboard-footer-bar">
-                <div className="footer-left">© 2025-26 Goods and Services Tax Network</div>
-                <div className="footer-center">Site Last Updated on 24-01-2026</div>
-                <div className="footer-right">Designed &amp; Developed by GSTN</div>
-            </footer>
         </div>
     );
 };

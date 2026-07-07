@@ -23,10 +23,11 @@ const gstr1Service = {
 
   saveGstr1Record: async (tableName, payload) => {
     try {
+      console.log('Saving record payload:', payload);
       const response = await api.post(`/gstr1/records/${tableName}`, payload);
       return response.data;
     } catch (error) {
-      console.error(`Error saving record to ${tableName}:`, error);
+      console.error('Error saving record to', tableName, ':', error?.response?.data || error.message);
       throw error;
     }
   },

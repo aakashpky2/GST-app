@@ -134,13 +134,18 @@ const GSTR1CDNURAddInvoice = () => {
 
             const payload = {
                 trn,
+                unregistered_type: formData.type,
                 note_number: formData.noteNumber,
                 note_date: formData.noteDate,
                 note_type: formData.noteType,
-                place_of_supply: formData.pos,
                 note_value: formData.noteValue || 0,
+                pos: formData.pos,
                 supply_type: formData.supplyType,
-                item_details
+                is_differential_rate: formData.differentialRate,
+                source: formData.source,
+                irn: formData.irn,
+                irn_date: formData.irnDate,
+                tax_details: item_details
             };
 
             const res = await gstr1Service.saveGstr1Record('gstr1_cdnur_invoices', payload);

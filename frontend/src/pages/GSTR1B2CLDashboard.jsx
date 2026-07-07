@@ -13,41 +13,64 @@ const GSTR1B2CLDashboard = () => {
     const [invoices, setInvoices] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const handleRefresh = () => {
+    const fetchInvoices = async () => {
         setLoading(true);
-        document.body.style.overflow = "hidden";
-        setTimeout(() => {
-            window.location.reload();
-        }, 500);
+        try {
+            const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
+            const res = await gstr1Service.getGstr1Records('gstr1_b2cl_invoices', trn);
+
+            if (res.success && res.data) {
+                const active = res.data.filter(inv => inv.status !== 'deleted' && inv.is_deleted !== true && inv.isDeleted !== true);
+                setInvoices(active);
+            } else {
+                setInvoices([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch B2CL invoices');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchInvoices();
+    }, []);
+
+    const handleRefresh = () => {
+        fetchInvoices();
     };
 
     const scrollToTop = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    useEffect(() => {
-        const fetchInvoices = async () => {
-            try {
-                const trn = localStorage.getItem('gst_trn') || localStorage.getItem('trn') || 'GUEST-LEARNING-SESSION';
-                const res = await gstr1Service.getGstr1Records('gstr1_b2cl_invoices', trn);
-
-                if (res.success && res.data) {
-                    setInvoices(res.data);
-                } else {
-                    setInvoices([]);
-                }
-            } catch (error) {
-                console.error("Failed to fetch B2CL invoices");
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInvoices();
-    }, []);
-
     const handleBackdropClick = () => {
         setActiveMenu(null);
     };
+
+    const formatCurrency = (val) => parseFloat(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('en-GB');
+    };
+
+    const sortedInvoices = [...invoices].sort((a, b) => {
+        const dateA = new Date(a.invoiceDate || a.invoice_date || a.created_at || 0);
+        const dateB = new Date(b.invoiceDate || b.invoice_date || b.created_at || 0);
+        if (dateB.getTime() !== dateA.getTime()) {
+            return dateB - dateA;
+        }
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+    });
+
+    const totalRecords = sortedInvoices.length;
+    const totalInvoiceValue = sortedInvoices.reduce((sum, inv) => sum + parseFloat(inv.totalInvoiceValue || inv.total_invoice_value || 0), 0);
+    const totalTaxableValue = sortedInvoices.reduce((sum, inv) => {
+        const items = inv.itemDetails || inv.items || [];
+        return sum + items.reduce((itemSum, item) => itemSum + parseFloat(item.taxableValue || item.taxable_value || 0), 0);
+    }, 0);
 
     return (
         <>
@@ -87,39 +110,52 @@ const GSTR1B2CLDashboard = () => {
                         {/* Dynamic Records Box */}
                         {loading ? (
                             <div className="b2cl-empty-records" style={{ textAlign: 'center' }}>Loading...</div>
-                        ) : invoices.length === 0 ? (
+                        ) : sortedInvoices.length === 0 ? (
                             <div className="b2cl-empty-records">
-                                There are no records to be displayed.
+                                No B2C (Large) invoices found for the selected return period.
                             </div>
                         ) : (
-                            <div className="b2cl-records-table-container">
-                                <table className="b2cl-records-table">
-                                    <thead>
-                                        <tr>
-                                            <th>POS</th>
-                                            <th>Invoice No.</th>
-                                            <th>Invoice Date</th>
-                                            <th>Total Invoice Value (₹)</th>
-                                            <th>Taxable Value (₹)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {invoices.map((inv, idx) => {
-                                            const items = inv.itemDetails || [];
-                                            const totalTaxable = items.reduce((sum, item) => sum + (parseFloat(item.taxableValue) || 0), 0).toFixed(2);
-                                            
-                                            return (
-                                                <tr key={inv.id || idx}>
-                                                    <td>{inv.pos}</td>
-                                                    <td>{inv.invoiceNo}</td>
-                                                    <td>{inv.invoiceDate}</td>
-                                                    <td>{inv.totalInvoiceValue}</td>
-                                                    <td>{totalTaxable}</td>
-                                                </tr>
-                                            );
-                                        })}
-                                    </tbody>
-                                </table>
+                            <div className="b2cl-records-container">
+                                <div style={{ background: '#f5f5f5', border: '1px solid #ccc', padding: '15px', marginBottom: '15px', display: 'flex', gap: '30px', fontWeight: 'bold', fontSize: '14px', color: '#333' }}>
+                                    <div>Total Records : {totalRecords}</div>
+                                    <div>Total Invoice Value : ₹{formatCurrency(totalInvoiceValue)}</div>
+                                    <div>Total Taxable Value : ₹{formatCurrency(totalTaxableValue)}</div>
+                                </div>
+                                <div className="b2cl-records-table-container">
+                                    <table className="b2cl-records-table">
+                                        <thead>
+                                            <tr>
+                                                <th>POS</th>
+                                                <th>Invoice No.</th>
+                                                <th>Invoice Date</th>
+                                                <th>Total Invoice Value (₹)</th>
+                                                <th>Taxable Value (₹)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {sortedInvoices.map((inv, idx) => {
+                                                const items = inv.itemDetails || inv.items || [];
+                                                const totalTaxable = items.reduce((sum, item) => sum + parseFloat(item.taxableValue || item.taxable_value || 0), 0);
+                                                
+                                                let posDisplay = inv.pos || '';
+                                                if (posDisplay && !posDisplay.includes('-')) {
+                                                    const codes = { '07': 'Delhi', '32': 'Kerala', '27': 'Maharashtra' };
+                                                    if (codes[posDisplay]) posDisplay = `${posDisplay}-${codes[posDisplay]}`;
+                                                }
+
+                                                return (
+                                                    <tr key={inv.id || idx} onClick={() => navigate(`/returns/auth/gstr1/b2cl/edit/${inv.id}`)} style={{ cursor: 'pointer', transition: 'background-color 0.2s' }} onMouseOver={e => e.currentTarget.style.backgroundColor='#f0f8ff'} onMouseOut={e => e.currentTarget.style.backgroundColor=''}>
+                                                        <td>{posDisplay}</td>
+                                                        <td style={{ color: '#1a73e8' }}>{inv.invoiceNo || inv.invoice_number || inv.invoice_no}</td>
+                                                        <td>{formatDate(inv.invoiceDate || inv.invoice_date)}</td>
+                                                        <td style={{ textAlign: 'right' }}>{formatCurrency(inv.totalInvoiceValue || inv.total_invoice_value)}</td>
+                                                        <td style={{ textAlign: 'right' }}>{formatCurrency(totalTaxable)}</td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         )}
 

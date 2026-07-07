@@ -50,9 +50,9 @@ const GSTR1NilRatedAddInvoice = () => {
                 const payload = {
                     trn,
                     description: row.description,
-                    nil_rated_amt: parseFloat(row.nilRated) || 0,
-                    exempted_amt: parseFloat(row.exempted) || 0,
-                    non_gst_amt: parseFloat(row.nonGst) || 0
+                    nil_rated_value: parseFloat(row.nilRated) || 0,
+                    exempted_value: parseFloat(row.exempted) || 0,
+                    non_gst_value: parseFloat(row.nonGst) || 0
                 };
                 return gstr1Service.saveGstr1Record('gstr1_nil_rated_supplies', payload);
             }));

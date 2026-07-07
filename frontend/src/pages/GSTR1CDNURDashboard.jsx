@@ -10,6 +10,14 @@ const GSTR1CDNURDashboard = () => {
     const [invoices, setInvoices] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const handleRefresh = () => {
+        setIsLoading(true);
+        document.body.style.overflow = "hidden";
+        setTimeout(() => {
+            window.location.reload();
+        }, 500);
+    };
+
     useEffect(() => {
         const fetchInvoices = async () => {
             try {
@@ -56,7 +64,7 @@ const GSTR1CDNURDashboard = () => {
                         <h2 className="cdnr-title">9B - Credit / Debit Notes (Unregistered)</h2>
                         <div className="cdnr-header-actions">
                             <button className="cdnr-btn-secondary">HELP <span style={{ fontSize: '11px', border: '1px solid #fff', borderRadius: '50%', padding: '0 3px', marginLeft: '3px' }}>?</span></button>
-                            <button className="cdnr-refresh-icon">
+                            <button className="cdnr-refresh-icon" onClick={handleRefresh}>
                                 <svg viewBox="0 0 24 24" width="16" height="16" fill="white">
                                     <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
                                 </svg>
@@ -71,7 +79,7 @@ const GSTR1CDNURDashboard = () => {
                         <div className="cdnr-loading">Loading...</div>
                     ) : invoices.length === 0 ? (
                         <div className="cdnr-empty-alert">
-                            <span><span style={{ marginRight: '8px', fontWeight: 'bold' }}>ℹ</span>There are no records to be displayed.</span>
+                            <span>No Credit / Debit Notes (Unregistered) found for the selected return period.</span>
                             <span className="close-alert">×</span>
                         </div>
                     ) : (
@@ -89,22 +97,33 @@ const GSTR1CDNURDashboard = () => {
                                 </thead>
                                 <tbody>
                                     {invoices.map((inv, idx) => {
-                                        // Aggregate totals from taxDetails (which is an object keyed by rate)
-                                        const taxDetails = inv.taxDetails || {};
-                                        const totalTaxable = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.taxableValue) || 0), 0).toFixed(2);
-                                        const totalIntegrated = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.integratedTax) || 0), 0).toFixed(2);
-                                        const totalCentral = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.centralTax) || 0), 0).toFixed(2);
-                                        const totalState = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.stateTax) || 0), 0).toFixed(2);
-                                        const totalCess = Object.values(taxDetails).reduce((sum, data) => sum + (parseFloat(data.cess) || 0), 0).toFixed(2);
+                                        let taxItems = [];
+                                        if (Array.isArray(inv.tax_details)) {
+                                            taxItems = inv.tax_details;
+                                        } else if (typeof inv.tax_details === 'object' && inv.tax_details !== null) {
+                                            taxItems = Object.values(inv.tax_details);
+                                        }
+
+                                        const totalTaxable = taxItems.reduce((sum, data) => sum + (parseFloat(data.taxableValue || data.taxable_value) || 0), 0);
+                                        
+                                        // Some records might have IGST explicitly, others might be intra-state and use CGST+SGST instead (though CDNUR is mostly inter-state B2CL)
+                                        const totalIntegrated = taxItems.reduce((sum, data) => {
+                                            const igst = parseFloat(data.integratedTax || data.integrated_tax) || 0;
+                                            const cgst = parseFloat(data.centralTax || data.central_tax) || 0;
+                                            const sgst = parseFloat(data.stateTax || data.state_tax) || 0;
+                                            return sum + (igst > 0 ? igst : (cgst + sgst));
+                                        }, 0);
+                                        
+                                        const totalCess = taxItems.reduce((sum, data) => sum + (parseFloat(data.cess) || 0), 0);
 
                                         return (
                                             <tr key={idx}>
-                                                <td>{inv.noteType}</td>
-                                                <td>{inv.noteNumber}</td>
-                                                <td>{inv.noteDate}</td>
-                                                <td>{totalTaxable}</td>
-                                                <td>{totalIntegrated !== "0.00" ? totalIntegrated : (parseFloat(totalCentral) + parseFloat(totalState)).toFixed(2)}</td>
-                                                <td>{totalCess}</td>
+                                                <td>{inv.note_type || inv.noteType}</td>
+                                                <td>{inv.note_number || inv.noteNumber}</td>
+                                                <td>{inv.note_date || inv.noteDate}</td>
+                                                <td>₹{totalTaxable.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td>₹{totalIntegrated.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td>₹{totalCess.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                             </tr>
                                         );
                                     })}

@@ -102,12 +102,12 @@ const GSTR1ExportsDashboard = () => {
                             <tbody>
                                 {invoices.map((inv, idx) => (
                                     <tr key={inv.id || idx}>
-                                        <td>{inv.invoiceNo}</td>
-                                        <td>{inv.invoiceDate}</td>
-                                        <td>{inv.portCode || '-'}</td>
-                                        <td>{inv.shippingBillNo || '-'}</td>
-                                        <td>{inv.totalInvoiceValue}</td>
-                                        <td>{inv.exportType || 'WOPAY'}</td>
+                                        <td>{inv.invoice_no}</td>
+                                        <td>{inv.invoice_date}</td>
+                                        <td>{inv.port_code || '-'}</td>
+                                        <td>{inv.shipping_bill_no || '-'}</td>
+                                        <td>₹{parseFloat(inv.total_invoice_value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td>{inv.gst_payment === 'With Payment of Tax' ? 'With Payment of Tax (WPAY)' : inv.gst_payment === 'Without Payment of Tax' ? 'Without Payment of Tax (WOPAY)' : inv.gst_payment}</td>
                                     </tr>
                                 ))}
                             </tbody>

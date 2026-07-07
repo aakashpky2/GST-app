@@ -7,6 +7,7 @@ const Login = () => {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showTempLoginAlert, setShowTempLoginAlert] = useState(false);
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
@@ -34,7 +35,13 @@ const Login = () => {
             navigate('/dashboard');
 
         } catch (err) {
-            setError(err.response?.data?.message || 'Invalid username or password');
+            const errorMsg = err.response?.data?.message || 'Invalid username or password';
+            if (errorMsg.includes('Invalid temporary username')) {
+                setShowTempLoginAlert(true);
+                setError('');
+            } else {
+                setError(errorMsg);
+            }
         } finally {
             setLoading(false);
         }
@@ -100,6 +107,40 @@ const Login = () => {
                     </div>
                 </form>
             </div>
+
+            {showTempLoginAlert && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
+                    alignItems: 'center', justifyContent: 'center', zIndex: 1000
+                }}>
+                    <div style={{
+                        background: 'white', padding: '24px', borderRadius: '12px',
+                        width: '100%', maxWidth: '400px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{
+                            width: '48px', height: '48px', background: '#fee2e2', color: '#dc2626',
+                            borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '24px', margin: '0 auto 16px'
+                        }}>!</div>
+                        <h3 style={{ color: '#1e293b', marginTop: 0, marginBottom: '12px', fontSize: '20px' }}>Login Failed</h3>
+                        <p style={{ color: '#475569', marginBottom: '24px', fontSize: '15px', lineHeight: '1.5' }}>
+                            Invalid temporary username or password. Please use the temporary username and password generated after registration.
+                        </p>
+                        <button 
+                            onClick={() => setShowTempLoginAlert(false)}
+                            style={{
+                                width: '100%', padding: '12px', background: '#1a3a6e', color: 'white',
+                                border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: '600',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

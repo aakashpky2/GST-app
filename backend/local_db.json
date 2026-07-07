@@ -1513,5 +1513,108 @@
         }
       ]
     }
-  }
+  },
+  "296900413926TRN": {
+    "BusinessDetails": {
+      "tradeName": "DBIX SOLUTIONS",
+      "additionalTrade": "AA SOLUTIONS",
+      "district": "Thiruvananthapuram",
+      "rule14A": "Yes",
+      "commencementDate": "2026-06-30",
+      "liabilityDate": "2026-06-25",
+      "regNo": "4354656786",
+      "regDate": "2026-06-19",
+      "constitution": "Foreign Company",
+      "casualTaxable": true,
+      "composition": true,
+      "reason": "Inter-State supply",
+      "regType": "GSTIN"
+    },
+    "PromoterPartners": {
+      "firstName": "Kasthuri",
+      "middleName": "",
+      "lastName": "Unni",
+      "fatherFirstName": "Kasthuri",
+      "fatherMiddleName": "",
+      "fatherLastName": "Unni",
+      "dob": "2026-06-30",
+      "mobile": "8714089342",
+      "email": "kasthuriunni8@gmail.com",
+      "gender": "Female",
+      "stdCode": "",
+      "telephone": "",
+      "designation": "ergtrhrth",
+      "din": "999999999",
+      "citizenOfIndia": true,
+      "pan": "GWTPB6165C",
+      "passport": "",
+      "aadhaar": "",
+      "country": "India",
+      "pinCode": "691571",
+      "state": "Kerala",
+      "district": "kollam",
+      "city": "kollam",
+      "locality": "",
+      "road": "aertyuiop",
+      "premises": "",
+      "buildingNo": "45456",
+      "floorNo": "",
+      "landmark": "",
+      "photo": "C:\\fakepath\\WhatsApp Image 2026-05-21 at 11.51.21 AM.jpeg",
+      "alsoSignatory": true
+    },
+    "AadhaarAuthentication": {
+      "optForAuth": true,
+      "input_6b70j": true
+    },
+    "Verification": {
+      "input_s16ho": true,
+      "declarerName": "GST USER",
+      "place": "Thiruvananthapuram",
+      "designation": "Proprietor",
+      "verified": true
+    }
+  },
+  "temp_users": [
+    {
+      "username": "TMP_X5Y8_9937",
+      "password_hash": "$2b$10$CvLupytOcuEMeQ0GGpvpZ./YGZmpO1ONiiK/uBI5fnW27n41Yqo2e",
+      "email": "gst_user_8110@example.com",
+      "role": "student",
+      "status": "active",
+      "permissions": {
+        "is_temporary_login": true,
+        "first_login_completed": false,
+        "pan": "TESTPAN1234",
+        "user_type": "Taxpayer",
+        "state": "Unknown",
+        "legal_name": "GST USER",
+        "mobile": "0000000000",
+        "trn": "296900413926TRN"
+      }
+    },
+    {
+      "username": "GST871643683",
+      "password_hash": "$2b$10$sjO9zJMZV36ND8mg6sfyO.Z325KhiJC9fAcjPnnebZpOq0j.B7nnm",
+      "email": "gst_user_3557@example.com",
+      "role": "student",
+      "status": "active",
+      "permissions": {
+        "is_temporary_login": true,
+        "first_login_completed": false,
+        "pan": "BMRLL1751W",
+        "user_type": "Taxpayer",
+        "state": "Delhi",
+        "state_code": "07",
+        "legal_name": "GST Registrant",
+        "mobile": "0000000000",
+        "trn": "296900413926TRN",
+        "gstin": "07BMRLL1751W1Z6",
+        "entity_code": "1",
+        "checksum": "6",
+        "financial_year": "2026-27",
+        "registration_date": "2026-06-30T08:41:11.946Z"
+      }
+    }
+  ]
 }

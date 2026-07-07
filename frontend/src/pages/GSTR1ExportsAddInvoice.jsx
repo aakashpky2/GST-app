@@ -77,19 +77,25 @@ const GSTR1ExportsAddInvoice = () => {
 
         // Instant Calculation Logic
         if (field === 'taxableValue') {
-            const taxableAmt = parseFloat(value);
-            const rateStr = newItemDetails[index].rate;
-            const rateVal = parseFloat(rateStr.replace('%', ''));
-
-            if (!isNaN(taxableAmt) && !isNaN(rateVal)) {
-                if (formData.gstPayment === 'Without Payment of Tax') {
-                    newItemDetails[index].integratedTax = '0.00';
-                } else {
-                    const igst = (taxableAmt * rateVal) / 100;
-                    newItemDetails[index].integratedTax = igst.toFixed(2);
-                }
+            if (value === '' || value === null) {
+                // If cleared, reset to 0.00
+                newItemDetails[index].integratedTax = '0.00';
             } else {
-                newItemDetails[index].integratedTax = '';
+                const taxableAmt = parseFloat(value);
+                const rateStr = newItemDetails[index].rate;
+                const rateVal = parseFloat(rateStr.replace('%', ''));
+
+                if (!isNaN(taxableAmt) && taxableAmt >= 0 && !isNaN(rateVal)) {
+                    if (formData.gstPayment === 'Without Payment of Tax') {
+                        newItemDetails[index].integratedTax = '0.00';
+                    } else {
+                        const igst = (taxableAmt * rateVal) / 100;
+                        newItemDetails[index].integratedTax = igst.toFixed(2);
+                    }
+                } else if (taxableAmt < 0) {
+                    // Invalid or negative, do not calculate (reset or leave as is)
+                    newItemDetails[index].integratedTax = '0.00';
+                }
             }
         }
 
@@ -114,7 +120,7 @@ const GSTR1ExportsAddInvoice = () => {
                 port_code: formData.portCode,
                 shipping_bill_no: formData.shippingBillNo,
                 shipping_bill_date: formData.shippingBillDate,
-                export_type: formData.gstPayment,
+                gst_payment: formData.gstPayment,
                 item_details: formData.itemDetails.filter(item => item.taxableValue !== '')
             };
 
@@ -286,7 +292,7 @@ const GSTR1ExportsAddInvoice = () => {
                                                     type="text"
                                                     value={item.integratedTax}
                                                     readOnly
-                                                    className={item.integratedTax ? 'exports-add-disabled-input' : ''}
+                                                    className="exports-add-disabled-input"
                                                     placeholder="0.00"
                                                 />
                                             </td>
